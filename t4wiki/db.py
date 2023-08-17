@@ -98,7 +98,7 @@ def init_app(app):
 
     @app.teardown_request
     def teardown_request(exception):
-        db.rollback()
+        rollback()
 
 class SQLRepresentation(type):
     def __new__(cls, name, bases, dct):
