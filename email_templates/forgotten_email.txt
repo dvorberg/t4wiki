@@ -1,0 +1,16 @@
+Hallo {firstname} {lastname},
+
+mit folgendem Link kannst Du Dich auf {site_url} wieder einloggen:
+
+    {link}
+
+Dein Benutzername ist übrigens „{login}“
+(Groß- und Kleinschfeibung beachten!)
+
+Dieser Link ist nur eine begrenzte Zeit gültig. Wenn Du eine neue e-Mail
+wie diese brauchst, verwende einfach folgenden Link:
+
+    {site_url}/authentication/forgott.py?login={login}
+
+Mit freundlichen Grüßen
+der e-Mail Roboter
