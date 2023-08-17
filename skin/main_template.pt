@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      metal:define-macro="master"
+      lang="de">
+  
+  <tal:block tal:replace="nothing">
+    Copyright 23 by Diedrich Vorberg (diedrich@tux4web.de)
+    
+    All Rights Reserved
+  </tal:block>
+  
+  <head>
+    <title>
+      <metal:block metal:define-slot="title">
+      </metal:block>
+    </title>
+
+    <!-- Misc head elements -->    
+    <metal:block metal:define-slot="head_slot" tal:replace="nothing">
+    </metal:block>
+  </head>
+  
+  <body>
+    <header>
+      <nav>
+      </nav>
+    </header>    
+    
+    <main role="main" class="container" metal:define-slot="main">      
+      <metal:block metal:define-slot="sections">
+      </metal:block>
+    </main>
+    
+    <footer class="container">
+    </footer>
+
+    <metal:block metal:define-slot="after-all">
+    </metal:block>
+  </body>
+</html>
