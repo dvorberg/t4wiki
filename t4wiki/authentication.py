@@ -60,6 +60,9 @@ class User(object):
         return self.has_role("Writer")
 
 class AnonymousUser(User):
+    def __init__(self):
+        pass
+
     roles = set()
     is_root = False
     is_anonymous = True
