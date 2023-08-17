@@ -8,17 +8,22 @@
 #     skin.register_with_app(app)
 #     app.register_blueprint(skinning.bp)
 
-import sys, os, os.path as op, time, datetime, re, dataclasses, pathlib
-import functools
+import sys, os, os.path as op, time, datetime, re, dataclasses
+import functools, threading, runpy, inspect
+from pathlib import Path
 from wsgiref.handlers import format_date_time
 import chameleon, chameleon.tales
 
-from flask import g, current_app as app, session, request, Blueprint
+from flask import ( g, current_app as app, session, request,
+                    Blueprint, abort, Response, )
 
 from . import debug
 from .utils import get_site_url, rget
 
 startup_time = time.time()
+
+module_load_lock = threading.Lock()
+module_cache = {}
 
 def cached_property_maybe(f):
     """
@@ -34,13 +39,11 @@ class TemplateWithCustomRenderMethod(chameleon.PageTemplateFile):
 
     def render(self, **kw):
         from . import authentication
-        from .einspielungen_blueprint import get_menu_konzerte
 
         extras = {"session": session,
                   "request": request,
                   "rget": rget,
-                  "user": authentication.get_user(),
-                  "menu_konzerte": get_menu_konzerte(), }
+                  "user": authentication.get_user(), }
 
         if hasattr(self, "filename") and self.filename != "<string>":
             extras["template_mtime"] = datetime.datetime.fromtimestamp(
@@ -69,6 +72,14 @@ class CustomPageTemplate(TemplateWithCustomRenderMethod):
 class CustomPageTemplateLoader(chameleon.PageTemplateLoader):
     formats = { "xml": CustomPageTemplateFile,
                 "text": chameleon.PageTextTemplateFile, }
+
+    def load(self, filename, format=None):
+        if isinstance(filename, Path):
+            filename = str(filename.absolute())
+        else:
+            filename = str(filename)
+
+        return super().load(filename, format)
 
 class MacrosPageTemplateWrapper(CustomPageTemplate):
     def __init__(self, macros_template, macro_name):
@@ -129,22 +140,22 @@ class MacrosFrom:
 
 @dataclasses.dataclass
 class SkinPath:
-    fs_path: pathlib.Path
-    url: str
+    fs_path: Path
+    href: str
 
     def resource_exists(self, path):
         return self.resource_path(path).exists()
 
     def resource_path(self, path):
-        return pathlib.Path(self.fs_path, path)
+        return Path(self.fs_path, path)
 
     def url(self, path):
-        return self.url + "/" + str(path)
+        return self.href + "/" + str(path)
 
 
 class PathList(list):
     def first_that_has(self, path):
-        path = pathlib.Path(path)
+        path = Path(path)
         for skinpath in self:
             if skinpath.resource_exists(path):
                 return skinpath
@@ -182,24 +193,21 @@ class Skin(object):
         return self._paths.first_that_has(path) is not None
 
     @cached_property_maybe
-    def resource_path(self, path)-> pathlib.Path:
+    def resource_path(self, path)-> Path:
         skinpath = self._paths.first_that_has(path)
         if skinpath is None:
             raise IOError(f"No skin file found for {path}")
         return skinpath.resource_path(path)
 
     def href(self, path):
-        if debug:
-            if ".min." in path:
-                t = "" # startup_time
-            elif path.endswith(".js") or path.endswith(".mjs"):
-                t = ""
-            else:
-                t = "?t=%f" % time.time()
+        if debug and not (".min." in path or path.endswith(".scss")):
+            t = ""
         else:
-            t = "?t=%f" % startup_time
+            t = "?t=%f" % time.time()
 
         skinpath = self._paths.first_that_has(path)
+        if skinpath is None:
+            raise IOError(f"File not found: {path}")
         return skinpath.url(path) + t
 
     def read(self, path, mode="r"):
@@ -236,50 +244,33 @@ def html_files(template_path):
     if ".." in template_path:
         raise ValueError(template_path)
 
-    if not app.skin.resource_exists(template_path):
-        found = False
-        parts = template_path.split("/")
-        filename = parts[-1]
-        if filename == "index.py" and len(parts) > 1:
-            parts[-1] = parts[-2]
-            newpath = "/".join(parts)
-            if app.skin.resource_exists(newpath + ".py"):
-                template_path = newpath + ".py"
-                found = True
-            elif app.skin.resource_exists(newpath + ".html"):
-                template_path = newpath + ".html"
-                found = True
+    path = Path(app.config["WWW_PATH"], template_path)
 
-        if not found:
-            d = f"{app.skin.resource_path(template_path)} not found."
-            return flask.abort(404, description=d)
-
-    if template_path.endswith(".html"):
+    if path.suffix == ".html":
         # HTML files are static.
         try:
-            template = app.skin.load_template(template_path)
+            template = app.skin.load_template(path)
         except ValueError:
             err = f"{template_path} not found by loader."
-            flask.abort( 404, description=err)
+            abort( 404, description=err)
 
-        response = flask.Response(template())
+        response = Response(template())
         if not debug:
             response.headers["Cache-Control"] = "max-age=604800"
             response.headers["Last-Modified"] = format_date_time(
                 startup_time)
         return response
 
-    elif template_path.endswith(".py"):
-        match = template_path_re.match(template_path)
+    elif template_path.suffix == ".py":
+        match = template_path_re.match(path.name)
         if match is None:
             raise ValueError(f"Illegal template name {template_path}.")
         else:
-            py_path = app.skin.resource_path(template_path)
             # Is there a default template?
             # A .pt file with the same name at the same
             # location?
-            pt_path = template_path[:-3] + ".pt"
-            if app.skin.resource_exists(pt_path):
+            pt_path = Path(path.parent, path.suffix + ".pt")
+            if pt_path.exists():
                 template = app.skin.load_template(pt_path)
             else:
                 template = None
