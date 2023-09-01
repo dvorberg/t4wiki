@@ -67,8 +67,11 @@ def normalize_title(title, ignore_namespace=False):
 
 
 def format_by_suffix(suffix):
-    return { ".mwiki": "wikitext",
-             ".wikkly": "wikkly" }[suffix]
+    if suffix.startswith("."):
+        suffix = suffix[1:]
+
+    return { "mwiki": "wikitext",
+             "wikkly": "wikkly" }[suffix]
 
 def tools_by_format(source_format):
     """
@@ -137,7 +140,7 @@ def compile_article(titles, source, format, root_language, user_info):
 
 
 def store_article(id, titles, ignore_namespace,
-                  root_language, source, format):
+                  root_language, source, format, uuid=None):
     """
     INSERT or UPDATE an article in the database and all the
     depending tables.
@@ -152,7 +155,7 @@ def store_article(id, titles, ignore_namespace,
     result = article_ids_by_titles(titles)
     foreign = []
     for article_title in result:
-        if id is None or article_title.article_id == id:
+        if id is None or article_title.article_id != id:
             foreign.append(article_title)
 
     if len(foreign) > 0:
@@ -177,6 +180,9 @@ def store_article(id, titles, ignore_namespace,
 
     # Article contents
     if id is None:
+        if uuid is not None:
+            article["uuid"] = uuid
+
         id = insert_from_dict("wiki.article", article)
     else:
         execute(sql.update("wiki.article",
