@@ -2,9 +2,9 @@ import time
 from io import StringIO
 
 from tinymarkup.context import Context
-from tinymarkup.macro import MacroLibrary
 from wikklytext.macro import ( WikklyMacro as Macro, WikklySource,
-                               LanguageMacro, ClassMacro, )
+                               MacroLibrary, LanguageMacro, ClassMacro, )
+from tinymarkup.writer import HTMLWriter
 from wikklytext.to_html import HTMLCompiler, to_html, to_inline_html
 
 class German(LanguageMacro):
@@ -55,8 +55,12 @@ class noinclude(ClassMacro):
 class include(Macro):
     environments = { "block" }
 
-    def html_element(self, document_title):
-        return '<p><b style="color:red">INCLUDE: {document_title}</b></p>'
+    def html_element(self, document_title, writer:HTMLWriter):
+        self.context.article_includes.add(document_title)
+        writer.open("div",
+                    class_="t4wiki-include",
+                    data_article_title=document_title)
+        writer.close("div")
 
 class flashcard(Macro):
     environments = { "block" }
