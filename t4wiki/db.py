@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
-import os.path as op
+"""
+Generic utility classes and routines for working with the PostgreSQL backend.
+"""
+
+import sys, os.path as op
 import psycopg2, datetime, types
 from flask import g, current_app as app, request
 
@@ -80,12 +84,11 @@ def insert_from_dict(relation, d, retrieve_id=True, sequence_name=None):
 
         if not "id" in d and retrieve_id:
             if sequence_name is None:
-                #if isinstance(relation, sql.relation):
-                #    name = relation.name.name
-                #else:
-                #    name = str(relation)
-                #    seqence_name = '%s_id_seq' % name
-                sequence_name = "myid"
+                if isinstance(relation, sql.relation):
+                    name = relation.name.name
+                else:
+                    name = str(relation)
+                sequence_name = '%s_id_seq' % name
 
             cc.execute("SELECT CURRVAL('%s')" % sequence_name)
             id, = cc.fetchone()
