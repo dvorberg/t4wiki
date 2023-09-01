@@ -60,5 +60,5 @@ class Kategorie(LinkMacro):
 class Category(Kategorie):
     pass
 
-macro_library = MacroLibrary()
-macro_library.register_module(globals())
+from tinywikitext.macro import macro_library
+macro_library.register_module(globals(), True)
