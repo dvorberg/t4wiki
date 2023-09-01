@@ -1,5 +1,6 @@
 import sys, os, os.path as op, fnmatch, shutil, types, functools, inspect, re
 import subprocess, threading, collections
+from collections.abc import MutableSet, Hashable
 from urllib.parse import urlencode, quote_plus
 
 from flask import g, current_app, request, session, redirect as flask_redirect
@@ -444,3 +445,45 @@ class FilterFormHandler(object):
         else:
             assert name in self._values, NameError
             self._values[name] = value
+
+class citextset(Hashable, MutableSet):
+    """
+    Implements a subset of the MutableSet interface ignoring
+    string case on comparison.  The last occurance of a string will be
+    saved as with-case version.
+    """
+    @staticmethod
+    def _key(s):
+        return s.lower()
+
+    def __init__(self, initial=[]):
+        # Maps lower case versions to actual strings.
+        self.data = dict([(self._key(value), value)
+                          for value in initial])
+
+    def add(self, value):
+        self.data[self._key(value)] = value
+
+    def discard(self, value):
+        try:
+            del self.data[self._key(value)]
+        except KeyError:
+            pass
+
+    def __contains__(self, value):
+        return ( self._key(value) in self.data )
+
+    def __iter__(self):
+        return iter(self.data.values())
+
+    def __len__(self):
+        return len(self.data)
+
+    def __repr__(self):
+        if len(self) == 0:
+            return self.__class__.__name__ + "()"
+        else:
+            return repr(set(self.data.values()))
+
+    def __hash__(self):
+        return hash(set(self.data.keys()))
