@@ -3,13 +3,11 @@ from tinymarkup.context import Context
 
 from ll.xist.ns import html
 
-from .utils import citextset
-
-languages = app.config["LANGUAGES"]
+from .utils import citextset, get_languages
 
 class Context(Context):
     def __init__(self, macro_library, user_info):
-        super().__init__(macro_library, languages)
+        super().__init__(macro_library, get_languages())
         self.user_info = user_info
         self.article_links = citextset()
         self.article_includes = citextset()

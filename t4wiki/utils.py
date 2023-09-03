@@ -3,7 +3,9 @@ import subprocess, threading, collections
 from collections.abc import MutableSet, Hashable
 from urllib.parse import urlencode, quote_plus
 
-from flask import g, current_app, request, session, redirect as flask_redirect
+from flask import (g, current_app as app, request, session,
+                   redirect as flask_redirect)
+
 
 from t4 import sql
 from t4.web import set_url_param
@@ -12,6 +14,11 @@ from t4.typography import improve_typography
 
 from ll.xist import xsc
 from ll.xist.ns import html
+
+import enchant
+
+def get_languages():
+    return app.config["LANGUAGES"]
 
 def redirect(url, **kw):
     if kw:
@@ -35,7 +42,7 @@ def get_www_url(path, **kw):
     else:
         params = ""
 
-    return current_app.config["SITE_URL"] + params
+    return app.config["SITE_URL"] + params
 
 def get_site_url(**kw):
     return get_www_url("/", **kw)
@@ -487,3 +494,40 @@ class citextset(Hashable, MutableSet):
 
     def __hash__(self):
         return hash(set(self.data.keys()))
+
+enchant_dicts = {}
+def guess_language(query):
+    """
+    Will guess the natural language of “query” by spell-checking it in all
+    languages that are supported by both the system and the enchant python
+    library (and its underlaying spell checking tools). The language that
+    has the most of the qords in “query” in it wins. If no language has
+    any of these words in it (they are probarbly proper names), None will
+    be returned.
+    """
+    words = sql.whitespace_re.split(query)
+
+    counts = {}
+    for language in get_languages().values():
+        iso = language.iso
+        if not iso in enchant_dicts:
+            try:
+                enchant_dicts[iso] = enchant.Dict(language.iso)
+            except:
+                enchant_dicts[iso] = None
+
+        dict = enchant_dicts[iso]
+
+        counts[iso] = 0
+        if dict is not None:
+            for word in words:
+                if dict.check(word):
+                    counts[iso] += 1
+
+    tpl = max(counts.items(), key=lambda tpl: tpl[1])
+    lang, count = tpl
+
+    if count == 0:
+        return None
+    else:
+        return get_languages().by_iso(lang)

@@ -154,6 +154,10 @@ class SkinPath:
 
 
 class PathList(list):
+    def __init__(self, paths):
+        for fs, href in paths:
+            self.append(SkinPath(fs, href))
+
     def first_that_has(self, path):
         path = Path(path)
         for skinpath in self:

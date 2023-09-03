@@ -9,8 +9,8 @@ from tinymarkup.compiler import CompilerDuplexer
 
 from . import model
 from .exceptions import TitleUnavailable
-from .context import Context, languages
-from .db import insert_from_dict, execute, query, query_one
+from .context import Context, get_languages
+from .db import insert_from_dict, execute, query_one
 
 title_re = re.compile(r"(?:([a-z]{2,3}):)?(.*?)\s*(?:\((.*)\))?$")
 class Title(NamedTuple):
@@ -34,7 +34,7 @@ class Title(NamedTuple):
             namespace = None
 
         if lang is not None:
-            lang = languages.by_iso(lang)
+            lang = get_languages().by_iso(lang)
 
         return Title(lang, title, namespace)
 
@@ -43,7 +43,7 @@ class Title(NamedTuple):
         if ignore_lang:
             lang = None
         else:
-            lang = languages.by_iso(article_title.language)
+            lang = get_languages().by_iso(article_title.language)
 
         return Title(lang, article_title.title, article_title.namespace)
 

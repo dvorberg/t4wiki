@@ -4,7 +4,7 @@
 Generic utility classes and routines for working with the PostgreSQL backend.
 """
 
-import sys, os.path as op
+import sys, os.path as op, pathlib
 import psycopg2, datetime, types
 from flask import g, current_app as app, request
 
@@ -416,21 +416,16 @@ def execute(command, parameters=()):
     cc.execute(command, parameters)
     return cc
 
+def get_sql_file_path(template_file_name):
+    here = pathlib.Path(__file__).resolve()
+    return pathlib.Path(here.parent.parent, "sql", "queries",
+                        template_file_name)
+
 def execute_with_template(template_file_name, parameters=(), **kw):
-    with open(op.join(app.config["SQL_QUERY_PATH"], template_file_name)) as fp:
+    with get_sql_file_path(template_file_name).open() as fp:
         template = fp.read()
     command = template.format(**kw)
     return execute(command, parameters)
-
-def query(command, parameters=(), dbobject_class=dbobject):
-    if isinstance(command, sql.Part):
-        if parameters:
-            raise ValueError("Can’t provide parameters with t4.sql statement.")
-        command, parameters = rollup_sql(command)
-
-    with cursor() as cc:
-        cc.execute(command, parameters)
-        return dbobject_class.__result_class__(cc, dbobject_class)
 
 def select_one(command, parameters=(), dbobject_class=dbobject):
     if isinstance(command, sql.Part):
