@@ -54,7 +54,12 @@ CREATE TABLE article
 
     ctime TIMESTAMP NOT NULL DEFAULT NOW(),
     mtime TIMESTAMP NOT NULL DEFAULT NOW()
-);    
+);
+
+CREATE TRIGGER update_mtime_on_article
+   AFTER INSERT OR UPDATE ON article FOR EACH ROW
+   EXECUTE PROCEDURE update_mtime();
+
 
 CREATE TABLE article_title
 (
