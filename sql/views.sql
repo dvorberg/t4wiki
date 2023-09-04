@@ -5,8 +5,8 @@ set search_path = wiki, public;
 DROP VIEW IF EXISTS article_info CASCADE;
 CREATE VIEW article_info AS
    SELECT id, uuid,
-          title AS main_title, namespace, 
-          ignore_namespace, format
+          title AS main_title, namespace, root_language, format,
+          ignore_namespace
      FROM article
      LEFT JOIN article_title ON article_id = article.id AND is_main_title;
 
