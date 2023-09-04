@@ -21,13 +21,18 @@ CREATE VIEW article_for_view AS
 
 DROP VIEW IF EXISTS article_fulltitle CASCADE;
 CREATE VIEW article_fulltitle AS
-    SELECT article_id, title, namespace, (
+    SELECT article_id, title, namespace, is_main_title, (
         CASE
           WHEN namespace IS NULL THEN title
           WHEN namespace IS NOT NULL THEN (
              (title || ' (') || namespace) || ')'
         END) as fulltitle
      FROM article_title;
+
+DROP VIEW IF EXISTS article_main_title CASCADE;
+CREATE VIEW article_main_title AS
+    SELECT article_id, title, namespace, fulltitle, is_main_title
+      FROM article_fulltitle;
 
 DROP VIEW IF EXISTS article_namespace CASCADE;
 CREATE VIEW article_namespace AS
