@@ -49,9 +49,9 @@ class Title(NamedTuple):
 
     def normalized(self):
         ret = []
-        if self.language:
-            ret.append(f"{self.language.iso}:")
-        ret.append(title)
+        if self.lang:
+            ret.append(f"{self.lang.iso}:")
+        ret.append(self.title)
         if self.namespace:
             ret.append(f" ({self.namespace})")
         return "".join(ret)
@@ -61,6 +61,23 @@ class Title(NamedTuple):
     def __repr__(self):
         return f"{self.__class__.__name__}<{str(self)}>"
 
+    @property
+    def full_title(self):
+        if self.namespace:
+            return f"{self.title} ({self.namespace})"
+        else:
+            return self.title
+
+    def __eq__(self, other):
+        def low(s):
+            if s is None:
+                return ""
+            else:
+                return s.lower()
+
+        return ( self.lang == other.lang
+                 and self.title.lower() == other.title.lower()
+                 and low(self.namespace) == low(other.namespace))
 
 def normalize_title(title, ignore_namespace=False):
     return parse_title(title, ignore_namespace).normalized()
@@ -138,6 +155,19 @@ def compile_article(titles, source, format, root_language, user_info):
                              context.article_includes,
                              context.macro_info, )
 
+def update_titles_for(id, titles, root_language):
+    execute("DELETE FROM wiki.article_title WHERE article_id = %i" % id)
+    for index, title in enumerate(titles):
+        insert_from_dict( "wiki.article_title",
+                          {
+                              "article_id": id,
+                              "title": title.title,
+                              "namespace": title.namespace,
+                              "language": (title.lang or root_language).iso,
+                              "is_main_title": bool(index == 0)
+                          }, retrieve_id=False)
+
+
 
 def store_article(id, titles, ignore_namespace,
                   root_language, source, format, uuid=None):
@@ -190,16 +220,7 @@ def store_article(id, titles, ignore_namespace,
                            article))
 
     # Titles
-    execute("DELETE FROM wiki.article_title WHERE article_id = %i" % id)
-    for index, title in enumerate(titles):
-        insert_from_dict( "wiki.article_title",
-                          {
-                              "article_id": id,
-                              "title": title.title,
-                              "namespace": title.namespace,
-                              "language": (title.lang or root_language).iso,
-                              "is_main_title": bool(index == 0)
-                          }, retrieve_id=False)
+    update_titles_for(id, titles, root_language)
 
     # Links
     execute("DELETE FROM wiki.article_link WHERE article_id = %i" % id)
