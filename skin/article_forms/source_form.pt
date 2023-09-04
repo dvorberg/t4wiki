@@ -48,7 +48,7 @@
 
           <div tal:replace="structure fb.html" />
           
-          <textarea id="aliases" rows="30"
+          <textarea id="source" rows="20"
                     tal:attributes="class string:form-control ${fb.cls}"
                     tal:content="value">
           </textarea>
