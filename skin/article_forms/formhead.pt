@@ -38,8 +38,8 @@
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link ${linkman.cls('meta_info')} f-key"
-           tal:attributes="href linkman.href('meta_info')">
+        <a class="nav-link ${linkman.cls('user_info')} f-key"
+           tal:attributes="href linkman.href('user_info')">
           Meta info <small>(F8)</small>
         </a>
       </li>
