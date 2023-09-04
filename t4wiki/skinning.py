@@ -204,15 +204,16 @@ class Skin(object):
         return skinpath.resource_path(path)
 
     def href(self, path):
-        if debug and not (".min." in path or path.endswith(".scss")):
-            t = ""
-        else:
-            t = "?t=%f" % time.time()
-
         skinpath = self._paths.first_that_has(path)
         if skinpath is None:
             raise IOError(f"File not found: {path}")
-        return skinpath.url(path) + t
+
+        if debug and not (".min." in path or path.endswith(".scss")):
+            t = time.time()
+        else:
+            t = startup_time
+
+        return skinpath.url(path) + "?t=%f" % t
 
     def read(self, path, mode="r"):
         return self.resource_path(path).open().read(mode)
