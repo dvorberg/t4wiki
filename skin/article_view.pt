@@ -6,14 +6,22 @@
       metal:use-macro="skin.main_template.macros.master"
       lang="en">
   <head>
-    <tal:block metal:fill-slot="head_slot">
+    <metal:block metal:fill-slot="title">
+      <tal:block tal:condition="article">
+        ${article.full_title}
+      </tal:block>      
+      <tal:block tal:condition="not:article">
+        ${query}
+      </tal:block>
+    </metal:block>
+    <metal:block metal:fill-slot="head_slot">
       <script type="module" tal:condition="article">
           import { ArticleManager } from "articles";
           globalThis.article_manager = new ArticleManager(${title_to_id_js},
                                                           ${meta_info_js},
                                                           ${link_info});
         </script>
-    </tal:block>
+    </metal:block>
   </head>
   <body>
     <main role="main" class="row t4wiki" metal:fill-slot="main">
@@ -115,7 +123,7 @@
         <p tal:condition="regular_result" class="alert alert-info">
           Page available:
           <tal:block tal:define="article regular_result">
-            <a href="string:/${article.full_title}">
+            <a tal:attributes="href string:/${article.full_title}">
               ${article.main_title}
               <small tal:condition="article.namespace"
                      class="text-body-secondary"
@@ -138,6 +146,7 @@
             <br />
             Results are limited to “${query_namespace}” namespace.
           </strong>
+          <kbd>Ctrl</kbd>+<kbd style="position: relative; top:-1px" class="badge text-bg-primary ctrl-no-jump-target">#</kbd> will jump to the numbered entries.
         </p>        
 
         <ol>
