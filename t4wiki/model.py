@@ -47,6 +47,12 @@ class Article(dbobject, has_title_and_namespace):
         return source
 
     @property
+    def user_info(self):
+        source, = query_one("SELECT user_info "
+                            "  FROM wiki.article WHERE id = %i" % self.id)
+        return source
+
+    @property
     def user_info_source(self):
         source, = query_one("SELECT user_info_source "
                             "  FROM wiki.article WHERE id = %i" % self.id)
@@ -86,6 +92,9 @@ class ArticleTitle(dbobject, has_title_and_namespace):
     @classmethod
     def select_by_fulltitle(ArticleTitle, title):
         return ArticleTitle.select_one(ArticleTitle.title_where(title))
+
+class ArticleMainTitle(ArticleTitle):
+    __view__ = "article_main_title"
 
 class FulltextEntry(dbobject, has_title_and_namespace):
     pass
