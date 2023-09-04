@@ -1,19 +1,20 @@
 class SearchbarManager
-{
+{       
     constructor()
     {
         document.addEventListener("DOMContentLoaded",
                                   this.on_dom_content_loaded.bind(this));
-    }
+        this.f_key_re = /F\(?(\d)\)?/;
+    }    
 
     on_dom_content_loaded(event)
     {
         this.input = document.querySelector("form#searchbar input");
         this.input.addEventListener(
-            "keypress", this.on_input_keypress.bind(this));
+            "keydown", this.on_input_keydown.bind(this));
 
         document.addEventListener(
-            "keypress", this.on_document_keypress.bind(this));
+            "keydown", this.on_document_keydown.bind(this));
 
         if (!document.querySelector("main form"))
         {
@@ -38,7 +39,7 @@ class SearchbarManager
         this.numbered_links = numbered_links;
     }
 
-    on_input_keypress(event)
+    on_input_keydown(event)
     {
         if (event.key == "Enter")
         {
@@ -55,19 +56,59 @@ class SearchbarManager
         }
     }
 
-    on_document_keypress(event)
+    on_document_keydown(event)
     {
-        if (event.key == "f" && event.getModifierState("Control"))
+        const meta = (event.getModifierState("Meta") ||
+                      event.getModifierState("OS")),
+              control = event.getModifierState("Control");
+
+        if (meta)
         {
-            this.input.focus();
-            this.input.select();
+            if (event.key == "s")
+            {
+                this.input.focus();
+                this.input.select();
+
+                event.preventDefault();
+            }
+            else if (event.key == "g")
+            {
+                window.location.href = globalThis.site_url;
+                event.preventDefault();
+            }
         }
-        else if (event.getModifierState("Control"))
+        
+        if (control)
         {
             const no = parseInt(event.key);
             if (no)
             {
                 window.location.href = this.numbered_links[no];
+                event.preventDefault();
+            }
+        }
+
+        const match = this.f_key_re.exec(event.key);
+        if (match)
+        {
+            const no = parseInt(match[1]);
+            for(const a of document.querySelectorAll("a[href].f-key"))
+            {
+                const small = a.querySelector("small");
+                if (small)
+                {
+                    const match = this.f_key_re.exec(small.textContent);
+                    if (match)
+                    {
+                        const found_no = parseInt(match[1]);
+                        
+                        if (found_no && found_no == no)
+                        {
+                            window.location.href = a.getAttribute("href");
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
