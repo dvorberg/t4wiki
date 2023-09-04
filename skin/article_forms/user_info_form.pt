@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      metal:use-macro="skin.main_template.macros.master"
+      lang="en">
+  <head>
+    <metal:block metal:fill-slot="title">
+      <tal:block tal:replace="linkman.article.full_title" />
+    </metal:block>
+    
+    <metal:block metal:fill-slot="head_slot">
+      
+    </metal:block>
+  </head>
+  <body>
+    <main role="main" class="t4wiki" metal:fill-slot="main"
+          tal:define="article linkman.article;
+                      formhead_template
+                          skin.load_template('article_forms/formhead.pt')">
+
+      <h1 metal:use-macro="formhead_template.macros.h1" />
+      
+      <metal:block metal:use-macro="formhead_template.macros.formhead" /> 
+      
+      <form class="form py-3 px-3 ${feedback.form_class}
+                   border-end border-start border-bottom"
+            method="post"
+            enctype="multipart/form-data">
+        
+        <div class="mb-3"
+             tal:define="fb feedback.on('user_info_source');
+                         value article.rget('user_info_source')">
+          <label for="aliases" class="form-label">User Info</label>
+
+          <div tal:replace="structure fb.html" />
+          
+          <textarea id="user-info-source" rows="20"
+                    tal:attributes="class string:form-control ${fb.cls}"
+                    tal:content="value">
+          </textarea>
+
+          <div class="form-text">
+
+          </div>            
+        </div>
+        
+        <div class="col-sm-3">
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+      </form>
+    </main>    
+  </body>
+</html>
+  
