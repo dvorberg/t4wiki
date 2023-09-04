@@ -34,10 +34,6 @@
             method="post"
             enctype="multipart/form-data">
         
-        <input type="hidden" name="referer"
-               tal:attributes="value rget('referer',
-                                          request.headers.get('Referer'))" />
-
         <div class="mb-3">
           <div tal:define="fb feedback.on('main_title')">
             <label for="main_title" class="form-label">Title</label>
@@ -48,7 +44,6 @@
                  tal:define="value article.rchecked('ignore_namespace', False)">
               <input type="checkbox" class="form-check-input"
                      id="ignore-namespace"
-                     name="ignore_namespace"
                      tal:attributes="checked ptutils.checked(value)" />
               <label class="form-check-label"
                      for="ignore-namespace">Ignore Namespace</label>
@@ -66,7 +61,8 @@
         </div>
 
         <div class="mb-3"
-             tal:define="value article.root_language|languages[0].iso">
+             tal:define="default article.root_language|languages[0].iso;
+                         value rget('lang', default)">
           <label class="form-label">Language</label>
 
           <div>
@@ -91,7 +87,7 @@
              tal:define="fb feedback.on('aliases');
                          value rget('aliases', aliases)">
           <label for="aliases" class="form-label">Aliases</label>
-          <textarea id="aliases" rows="5"
+          <textarea id="aliases" rows="5" name="aliases"
                     tal:attributes="class string:form-control ${fb.cls}"
                     tal:content="value">
           </textarea>
@@ -122,10 +118,15 @@
 
         
         <div class="col-sm-8">
+          <input style="display:none; visibility:hidden"
+                 id="followup"
+                 name="followup" />
           <button type="submit"
+                  onclick="document.querySelector('#followup').value = 'view'"
                   class="btn btn-primary">Submit + View</button>
           
           <button type="submit"
+                  onclick="document.querySelector('#followup').value = 'source'"
                   class="btn btn-success">Submit + Edit Source</button>
         </div>
       </form>
