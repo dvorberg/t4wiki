@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      lang="en">
+
+  <metal:block metal:define-macro="h1" tal:define="article linkman.article">
+    <div class="mb-3">
+      <h1 tal:condition="not:article">
+        New Article
+      </h1>
+
+      <a tal:condition="article" class="fs-1 f-key"
+         style="text-decoration: none"
+         tal:attributes="href article.href">
+        ${article.main_title}
+        <span tal:condition="article.namespace"
+              class="fs-small text-body-secondary"
+              tal:content="article.namespace" />
+        <small class="fs-6 text-body-secondary">(F5)</small>
+      </a>
+    </div>
+  </metal:block>
+  
+  <div metal:define-macro="formhead">
+    <ul class="nav nav-tabs nav-fill">
+      <li class="nav-item">
+        <a class="nav-link ${linkman.cls('title')} f-key"
+           tal:attributes="href linkman.href('title')">
+          Title and format <small>(F6)</small>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link ${linkman.cls('source')} f-key"
+           tal:attributes="href linkman.href('source')">
+          Source <small>(F7)</small>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link ${linkman.cls('meta_info')} f-key"
+           tal:attributes="href linkman.href('meta_info')">
+          Meta info <small>(F8)</small>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link ${linkman.cls('files')} f-key"
+           tal:attributes="href linkman.href('files')">
+          Files <small>(F9)</small>
+        </a>
+      </li>
+    </ul>
+  </div>
+</html>
