@@ -32,6 +32,12 @@ def languages_css():
                      "}") % ( iso, iso, ))
     response = make_response("\n".join(ret), 200)
     response.headers["Content-Type"] = "text/css"
+
+    if False: #debug:
+        response.headers["Pragma"] = "no-cache"
+    else:
+        response.headers["Cache-Control"] = "max-age=6048000" # 10 weeks
+
     return response
 
 
@@ -61,8 +67,6 @@ CREATE TEMPORARY VIEW search_result AS
 @bp.route("/")
 @bp.route("/<path:article_title>")
 def article_view(article_title=None):
-    start = time.time()
-
     if article_title is None:
         article_title = ""
 
@@ -73,20 +77,14 @@ def article_view(article_title=None):
     if article_title == "":
         article_title = app.config["MAIN_ARTICLE"]
 
-    print("template load")
-    print("%.2f" % (time.time() - start)); start = time.time()
-
     cc = db.cursor()
     lang = guess_language(article_title)
-    print("guess_language")
-    print("%.2f" % (time.time() - start)); start = time.time()
     if lang is None:
         config = "simple"
     else:
         config = lang.tsearch_configuration
     cc.execute(fulltext_query_tmpl, { "query": article_title,
                                       "tsearch_config": config })
-    print("%.2f" % (time.time() - start)); start = time.time()
 
     def full_text_search(query):
         cc.execute(query)
@@ -111,7 +109,6 @@ def article_view(article_title=None):
                                          f"  FROM search_result "
                                          f"  {where}"
                                          f" ORDER BY rank DESC")
-        print("%.2f" % (time.time() - start)); start = time.time()
         if result:
             regular_result = model.Article.select_by_primary_key(result[0])
         else:
@@ -126,7 +123,6 @@ def article_view(article_title=None):
         article_id, = result
         included_articles = model.IncludedArticle.query_recursively_for(
             article_id)
-        print("%.2f" % (time.time() - start)); start = time.time()
 
         included_article_ids = [ a.article_id for a in included_articles ]
         article_ids = [article_id] + included_article_ids
@@ -135,7 +131,6 @@ def article_view(article_title=None):
 
         articles = model.ArticleForView.select(
             sql.where("id in (", article_ids_s, ")"))
-        print("%.2f" % (time.time() - start)); start = time.time()
 
         included = []
         meta_info_js = []
@@ -161,13 +156,11 @@ def article_view(article_title=None):
             "SELECT json_object_agg(target, fulltitle)::text "
             "  FROM article_link_resolved "
             " WHERE article_id IN (%s)" % article_ids_s)
-        print("%.2f" % (time.time() - start)); start = time.time()
 
         linking_here = list(model.ResolvedArticleTeaser.select(
             sql.where("resolved_fulltitle =",
                       sql.string_literal(main_article.full_title)),
             sql.orderby("main_title, namespace")))
-        print("%.2f" % (time.time() - start)); start = time.time()
 
         if len(linking_here) == 0:
             where = ""
@@ -182,10 +175,8 @@ def article_view(article_title=None):
                                          f"  {where}"
                                          f" ORDER BY rank DESC"
                                          f" LIMIT 10")
-        print("%.2f" % (time.time() - start)); start = time.time()
         full_text_count, = db.query_one(f"SELECT COUNT(*) FROM search_result "
                                         f" {where}")
-        print("%.2f" % (time.time() - start)); start = time.time()
 
         return template(article=main_article,
                         included=included,
