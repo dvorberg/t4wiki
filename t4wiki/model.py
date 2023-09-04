@@ -1,6 +1,8 @@
 
+from flask import url_for
 from t4 import sql
 
+from .utils import get_site_url
 from .db import dbobject, query_one, cursor, execute_with_template
 
 class has_title_and_namespace:
@@ -27,6 +29,29 @@ class Article(dbobject, has_title_and_namespace):
                                      ("wiki.article_title",),
                                      ArticleTitle.title_where(title), ))
 
+    def form_url(self, form):
+        return url_for(f"articles.{form}_form") + f"?id={self.id}"
+
+    @property
+    def href(self):
+        return get_site_url() + "/" + self.full_title
+
+    @property
+    def id_where(self):
+        return sql.where("article_id = %i" % self.id)
+
+    @property
+    def source(self):
+        source, = query_one("SELECT source "
+                            "  FROM wiki.article WHERE id = %i" % self.id)
+        return source
+
+    @property
+    def user_info_source(self):
+        source, = query_one("SELECT user_info_source "
+                            "  FROM wiki.article WHERE id = %i" % self.id)
+        return source
+
 class ArticleForView(Article, has_title_and_namespace):
     __view__ = "article_for_view"
 
@@ -46,7 +71,7 @@ class ResolvedArticleLink(dbobject):
 class ResolvedArticleTeaser(dbobject, has_title_and_namespace):
     __view__ = "article_teaser_on_resolved"
 
-class ArticleTitle(dbobject):
+class ArticleTitle(dbobject, has_title_and_namespace):
     __schema__ = "wiki"
     __relation__ = "article_title"
 
