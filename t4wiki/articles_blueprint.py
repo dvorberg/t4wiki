@@ -14,6 +14,7 @@ import bibtexparser.bparser
 
 from t4 import sql
 from t4.typography import normalize_whitespace
+from t4.passwords import slug
 
 from tinymarkup.exceptions import MarkupError
 from tinymarkup.utils import html_start_tag
@@ -292,7 +293,6 @@ def make_grey_image(greypath):
     img = Image.new(mode="L", size=(200,200), color=128)
     img.save(greypath)
 
-preview_sizes = ( 300, 600, 1800, )
 def create_previews_for(upload:model.Upload):
     preview_dir = pathlib.Path(app.config["PREVIEW_PATH"],
                                upload.preview_dir_name)
@@ -310,7 +310,7 @@ def create_previews_for(upload:model.Upload):
         # Create default grey images.
         greypath = pathlib.Path(preview_dir, "grey.jpg")
         make_grey_image(greypath)
-        for size in preview_sizes:
+        for size in model.Upload.preview_sizes:
             outfilepath = pathlib.Path(preview_dir,
                                        "preview%i.jpg" % (size))
             outfilepath.hardlink_to(greypath)
@@ -328,7 +328,7 @@ def create_image_previews_for(preview_dir, upload):
     else:
         width, height = 1000000, 1000000
 
-    for size in preview_sizes:
+    for size in model.Upload.preview_sizes:
         ext = upload.ext
 
         if ext == ".pdf":
@@ -362,6 +362,7 @@ def create_previews_for_all():
     # To store image dimensions:
     commit()
 
+separator_re = re.compile(r"[/\\:]")
 @bp.route("/files_form.cgi", methods=("GET", "POST"))
 @role_required("Writer")
 @gets_parameters_from_request
@@ -369,12 +370,43 @@ def files_form(id:int):
     template = app.skin.load_template("article_forms/files_form.pt")
     article = model.Article.select_by_primary_key(id)
 
-    if request.method == "POST":
-        feedback = FormFeedback()
-    else:
-        feedback = NullFeedback()
+    errors = xsc.Frag()
 
-    return template(linkman=LinkMan('files', article), feedback=feedback)
+    if request.method == "POST":
+        for file in request.files.getlist("files"):
+            # When there is no file, the Browser sends am empty one.
+            if file.filename != "":
+                filename = file.filename.replace("..", "_") # For security.
+                # Remove path separators from the filename, just in case.
+                parts = separator_re.split(filename)
+                filename = parts[-1]
+
+                count, = query_one("SELECT COUNT(*) FROM uploads.upload "
+                                   " WHERE article_id = %s "
+                                   "   AND filename = %s", (id, filename,))
+                if count > 0:
+                    errors.append(f"A file named “{filename}” already exists "
+                                  f"for this article.")
+                else:
+                    upload = { "article_id": id,
+                               "filename": filename,
+                               "data": file.read(),
+                               "slug": slug(20), }
+                    upload_id = insert_from_dict("uploads.upload", upload)
+
+                    upload["id"] = upload_id
+                    upload = model.Upload.from_dict(upload)
+
+                    create_previews_for(upload)
+
+        commit()
+
+    uploads = model.Upload.select( sql.where("article_id = %i" % id),
+                                   sql.orderby("sortrank" ) )
+
+    return template(linkman=LinkMan('files', article),
+                    uploads=uploads,
+                    errors=errors)
 
 @bp.route("/delete.cgi")
 @role_required("Writer")

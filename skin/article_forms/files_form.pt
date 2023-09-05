@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:tal="http://xml.zope.org/namespaces/tal"
@@ -23,21 +24,103 @@
       <h1 metal:use-macro="formhead_template.macros.h1" />
       
       <metal:block metal:use-macro="formhead_template.macros.formhead" /> 
-      
-      <form class="form py-3 px-3 ${feedback.form_class}
-                   border-end border-start border-bottom"
-            method="post"
-            enctype="multipart/form-data">
-        
-        <input type="hidden" name="referer"
-               tal:attributes="value rget('referer',
-                                          request.headers.get('Referer'))" />
 
-        
-        <div class="col-sm-3">
-          <button type="submit" class="btn btn-primary">Submit</button>
+      <div class="py-3 px-3 border-end border-start border-bottom">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4
+                    pb-4 border-bottom"
+             tal:condition="uploads">
+          <div class="col" tal:repeat="upload uploads">
+            <div class="card">
+              <div class="row g-0">
+                <div class="col-md-4">                  
+                  <img class="preview-image preview-300"
+                       style="max-width: 100%"
+                       tal:attributes="src upload.preview_url_for(300)" /> 
+                </div>
+                <div class="col-md-8">
+                  <div class="card-body">
+                    <div class="mb-1">
+                      <input class="title form-control form-control-lg"
+                             placeholder="Caption"
+                             tal:attributes="value upload.title" />
+                    </div>
+                    
+                    <div class="mb-1">
+                      <textarea class="description form-control"
+                                placeholder="Description"
+                                tal:content="upload.description">
+                      </textarea>
+                    </div>
+
+                    <div class="mb-1">
+                      <input class="filename form-control"
+                             placeholder="Filename"
+                             tal:attributes="value upload.filename" />
+                    </div>
+                    
+                    <div class="mb-1">
+                      <label class="me-2">
+                        <input type="checkbox" name="gallery"
+                               tal:attributes="checked ptutils.checked(upload.gallery)" />
+                        In gallery
+                      </label>
+                      
+                      <label>                        
+                        <input type="checkbox" name="is_download"
+                               tal:attributes="checked ptutils.checked(upload.is_download)" />
+                        Download
+                      </label>
+
+                      <button type="button" class="btn btn-danger btn-sm"
+                              style="float:right">
+                        <i class="icon icon-trash"></i>
+                      </button>                      
+                    </div>
+                    
+                    <p class="card-text text-body-secondary text-small">
+                      <tal:block tal:condition="upload.width and upload.height">
+                        ${upload.width}✕${upload.width} px •
+                      </tal:block>
+                      <i tal:replace="ptutils.pretty_bytes(upload.size)" />
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>            
+          </div>          
         </div>
-      </form>
+
+        <form class="form" 
+              method="post"
+              enctype="multipart/form-data"
+              data-article-id="${rget('id')}">
+
+          <input type="hidden" name="id" tal:attributes="value rget('id')" />
+
+          <div class="mt-3 mb-3">          
+            <label for="uploads"
+                   class="form-label">
+              Files to upload
+            </label>
+
+            <input class="form-control"
+                   name="files"
+                   type="file" id="uploads"
+                   multiple="multiple" />
+            
+            <div class="invalid-feedback my-3" tal:condition="errors">
+              <tal:block tal:repeat="error errors">
+                <p tal:content="structure error" />
+              </tal:block>
+            </div>
+            
+          </div>
+          
+          <div class="col-sm-3">
+            <button type="submit" class="btn btn-primary">Upload</button>
+          </div>
+        </form>
+      </div>
     </main>    
   </body>
 </html>

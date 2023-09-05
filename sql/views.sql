@@ -125,6 +125,10 @@ DROP VIEW IF EXISTS upload_info CASCADE;
 CREATE VIEW upload_info AS
    SELECT id, article_id, filename, title, description, gallery,
           is_download, sortrank, width, height, ctime, slug,
+          substring(filename, '(\.[^\.]+$)') AS ext,
+          CASE WHEN  substring(filename, '(\.[^\.]+$)') = '.jpg' THEN '.jpg'
+               ELSE '.png'
+          END AS preview_ext,
           length(data) AS size
      FROM upload;
 
@@ -136,6 +140,7 @@ upload_info_by_filename AS (
            filename,
            jsonb_build_object('id', id,
                               'slug', slug,
+                              'preview_ext', preview_ext,
                               'width', width,
                               'height', height,
                               'size', size,

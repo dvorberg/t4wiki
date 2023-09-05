@@ -9,6 +9,18 @@
 {
     article
     {
-
+        img.float-end
+        {
+            margin: 0 0 0.5em 0.5em;
+        }
+        
+        figure
+        {
+            img
+            {
+                max-width: 100%;
+            }
+        }
+        
     }
 }

@@ -125,7 +125,42 @@ class FileManager
 
     on_dom_content_loaded(event)
     {
-        
+        for(const div of document.querySelectorAll("[data-article-id]"))
+        {
+            const article_id = parseInt(div.getAttribute("data-article-id"));
+
+            for(const img of div.querySelectorAll("img.preview-image"))
+            {
+                const filename = decodeURI(img.getAttribute("src")),
+                      fileinfo = this.files_by_article_id[article_id][filename];
+
+                if (fileinfo)
+                {
+                    var size = 300;
+                    if (img.classList.contains("preview-1800"))
+                    {
+                        size = 1800;
+                    }
+                    else if (img.classList.contains("preview-600"))
+                    {
+                        size = 600;
+                    }
+
+                    const id = fileinfo["id"], slug = fileinfo["slug"],
+                          preview_ext = fileinfo["preview_ext"],
+                          preview_dir = `${article_id}_${id}_${slug}`;
+                    
+                    img["src"] = `${globalThis.site_url}/previews/` +
+                          `${preview_dir}/preview${size}${preview_ext}`;
+
+                    const caption = img.parentNode.querySelector("figcaption");
+                    if (caption && caption.textContent == "")
+                    {
+                        caption = fileinfo.title;
+                    }
+                }
+            }
+        }
     }
 }
 

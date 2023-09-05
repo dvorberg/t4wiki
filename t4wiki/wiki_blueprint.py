@@ -159,6 +159,8 @@ def article_view(article_title=None):
             "SELECT json_object_agg(article_id, uploads_info)::TEXT"
             "  FROM uploads.upload_info_for_view "
             " WHERE article_id IN (%s)" % article_ids_s)
+        if not file_info_json:
+            file_info_json = "{}"
 
         link_info, = db.query_one(
             "SELECT json_object_agg(target, fulltitle)::text "

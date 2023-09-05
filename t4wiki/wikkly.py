@@ -7,6 +7,9 @@ from wikklytext.macro import ( WikklyMacro as Macro, WikklySource,
 from tinymarkup.writer import HTMLWriter
 from wikklytext.to_html import HTMLCompiler, to_html, to_inline_html
 
+from ll.xist import xsc
+from ll.xist.ns import html
+
 class German(LanguageMacro):
     name = "de"
 
@@ -90,17 +93,24 @@ class anchor(Macro):
 class Bild(Macro):
     name = "bild"
 
-    def html_element(self, filename):
+    def html_element(self, filename, info=""):
         if self.environment == "block":
-            return f'<figure><img src="{filename}" /></figure>'
+            return html.figure(
+                html.img(src=filename,
+                         class_="rounded preview-image preview-1800"),
+                html.figcaption(info, class_="figure-caption"),
+                class_="figure t4wiki-figure")
         else:
-            return f'<img src="{filename}" />'
+            return html.img(src=filename,
+                            class_="rounded preview-image preview-1800")
 
 class BildRechts(Macro):
     name = "bildrechts"
 
-    def html_element(self, filename):
-        return f'<img src="{filename}" />'
+    def html_element(self, filename, info=""):
+        return html.img(src=filename,
+                        title=info,
+                        class_="rounded float-end preview-image preview-300")
 
 class HTMLMacro(Macro):
     name = "html"

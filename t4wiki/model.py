@@ -120,26 +120,54 @@ class Upload(dbobject):
     __relation__ = "upload"
     __view__ = "upload_info"
 
+    preview_sizes = ( 300, 600, 1800, )
+
     @property
     def data(self):
-        data, = query_one("SELECT data "
-                          "  FROM uploads.upload "
-                          " WHERE id = %i" % self.id)
-        return data
-
-    @functools.cached_property
-    def ext(self):
-        name, ext = op.splitext(self.filename)
-        return ext.lower()
-
-    def preview_url_for(self, size):
-        #if self.ext in { ".jpg", ".pdf" }:
-        #    return ".jpg"
-        if self.ext == ".png":
-            return ".png"
+        if hasattr(self, "_data"):
+            return self._data
         else:
-            return ".jpg"
+            data, = query_one("SELECT data "
+                              "  FROM uploads.upload "
+                              " WHERE id = %i" % self.id)
+            return data
+
+    @data.setter
+    def data(self, _data):
+        self._data = _data
+
+    @property
+    def ext(self):
+        if not hasattr(self, "_ext"):
+            name, ext = op.splitext(self.filename)
+            self._ext = ext.lower()
+        return self._ext
+
+    @ext.setter
+    def ext(self, ext):
+        self._ext = ext
+
+    @property
+    def preview_ext(self):
+        if not hasattr(self, "_preview_ext"):
+            if self.ext == ".png":
+                self._preview_ext = ".png"
+            else:
+                self._preview_ext = ".jpg"
+
+        return self._preview_ext
+
+    @preview_ext.setter
+    def preview_ext(self, p):
+        self._preview_ext = p
 
     @property
     def preview_dir_name(self):
         return "%i_%i_%s" % ( self.article_id, self.id, self.slug, )
+
+    def preview_url_for(self, size):
+        assert size in self.preview_sizes, ValueError
+        return "%s/previews/%s/preview%i%s" % ( get_site_url(),
+                                                self.preview_dir_name,
+                                                size,
+                                                self.preview_ext, )
