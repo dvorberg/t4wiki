@@ -237,6 +237,7 @@ def store_article(id, titles, ignore_namespace,
                           retrieve_id=False)
 
 
+    return id
 
 def get_user_info(id):
     info, = query_one("SELECT user_info FROM wiki.article "

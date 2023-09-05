@@ -10,6 +10,13 @@ class SearchbarManager
     on_dom_content_loaded(event)
     {
         this.input = document.querySelector("form#searchbar input");
+
+        if (!this.input)
+        {
+            // Search bar HTML is not part of the current document. 
+            return
+        }
+        
         this.input.addEventListener(
             "keydown", this.on_input_keydown.bind(this));
 

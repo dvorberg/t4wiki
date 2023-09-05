@@ -41,16 +41,20 @@ CREATE TABLE article
     ignore_namespace BOOLEAN NOT NULL DEFAULT false,
     
     root_language language NOT NULL,    
-    source TEXT NOT NULL,
+    source TEXT NOT NULL DEFAULT '',
     format format NOT NULL,
-    current_html TEXT NOT NULL,
+    current_html TEXT NOT NULL DEFAULT '',
 
     user_info_source TEXT NOT NULL DEFAULT '',
     user_info JSONB NOT NULL DEFAULT '{}'::JSONB,
 
     macro_info JSONB NOT NULL DEFAULT '{}'::JSONB,
 
-    tsvector tsvector NOT NULL,
+    bibtex_source TEXT,
+    bibtex_key TEXT,
+    bibtex JSONB,
+
+    tsvector tsvector NOT NULL DEFAULT to_tsvector('simple', ''),
 
     ctime TIMESTAMP NOT NULL DEFAULT NOW(),
     mtime TIMESTAMP NOT NULL DEFAULT NOW()
@@ -86,20 +90,13 @@ CREATE TABLE article_include
     wants_to_include citext NOT NULL, -- Maybe including namespace
     
     UNIQUE(article_id, wants_to_include)
-);    
+);
 
-
-CREATE TYPE bibtex_entry_type AS ENUM (
-       'article',  'book',  'booklet',  'conference',  'inbook',
-       'incollection',  'inproceedings',  'manual', 'mastersthesis',
-       'misc', 'phdthesis', 'proceedings', 'techreport', 'unpublished' );
-
-CREATE TABLE bibtex
+CREATE TABLE article_bibref
 (
-    citekey citext PRIMARY KEY,
-    entry_type bibtex_entry_type NOT NULL,
-    source TEXT NOT NULL,
-    parsed JSONB NOT NULL
+    article_id INTEGER NOT NULL REFERENCES article ON DELETE CASCADE,
+    citekey citext NOT NULL,    
+    UNIQUE(article_id, citekey)
 );
 
 COMMIT;

@@ -16,6 +16,7 @@ from tinymarkup.utils import html_start_tag
 from .ptutils import test
 from .context import get_languages
 from .utils import guess_language
+from .authentication import login_required, role_required
 from . import markup
 from . import model
 from . import db
@@ -23,6 +24,7 @@ from . import db
 bp = Blueprint("wiki", __name__, url_prefix="/wiki")
 
 @bp.route("/t4wiki_languages.css")
+@login_required
 def languages_css():
     ret = []
     for language in get_languages().values():
@@ -66,6 +68,7 @@ CREATE TEMPORARY VIEW search_result AS
 
 @bp.route("/")
 @bp.route("/<path:article_title>")
+@role_required("Reader")
 def article_view(article_title=None):
     if article_title is None:
         article_title = ""
@@ -152,6 +155,11 @@ def article_view(article_title=None):
                                                                ia.article_id, )
                                                 for ia in included_articles ])
 
+        file_info_json, = db.query_one(
+            "SELECT json_object_agg(article_id, uploads_info)::TEXT"
+            "  FROM uploads.upload_info_for_view "
+            " WHERE article_id IN (%s)" % article_ids_s)
+
         link_info, = db.query_one(
             "SELECT json_object_agg(target, fulltitle)::text "
             "  FROM article_link_resolved "
@@ -183,6 +191,7 @@ def article_view(article_title=None):
                         linking_here=linking_here,
                         meta_info_js=meta_info_js,
                         link_info=link_info,
+                        file_info_json=file_info_json,
                         title_to_id_js=title_to_id_js,
                         query=article_title,
                         search_result=search_result,

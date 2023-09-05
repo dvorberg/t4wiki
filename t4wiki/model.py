@@ -1,3 +1,4 @@
+import os.path as op, functools
 
 from flask import url_for
 from t4 import sql
@@ -34,7 +35,10 @@ class Article(dbobject, has_title_and_namespace):
 
     @property
     def href(self):
-        return get_site_url() + "/" + self.full_title
+        if not getattr(self, "id"):
+            return None
+        else:
+            return get_site_url() + "/" + self.full_title
 
     @property
     def id_where(self):
@@ -43,6 +47,18 @@ class Article(dbobject, has_title_and_namespace):
     @property
     def source(self):
         source, = query_one("SELECT source "
+                            "  FROM wiki.article WHERE id = %i" % self.id)
+        return source
+
+    @property
+    def bibtex(self):
+        source, = query_one("SELECT bibtex "
+                            "  FROM wiki.article WHERE id = %i" % self.id)
+        return source
+
+    @property
+    def bibtex_source(self):
+        source, = query_one("SELECT bibtex_source "
                             "  FROM wiki.article WHERE id = %i" % self.id)
         return source
 
@@ -98,3 +114,32 @@ class ArticleMainTitle(ArticleTitle):
 
 class FulltextEntry(dbobject, has_title_and_namespace):
     pass
+
+class Upload(dbobject):
+    __schema__ = "uploads"
+    __relation__ = "upload"
+    __view__ = "upload_info"
+
+    @property
+    def data(self):
+        data, = query_one("SELECT data "
+                          "  FROM uploads.upload "
+                          " WHERE id = %i" % self.id)
+        return data
+
+    @functools.cached_property
+    def ext(self):
+        name, ext = op.splitext(self.filename)
+        return ext.lower()
+
+    def preview_url_for(self, size):
+        #if self.ext in { ".jpg", ".pdf" }:
+        #    return ".jpg"
+        if self.ext == ".png":
+            return ".png"
+        else:
+            return ".jpg"
+
+    @property
+    def preview_dir_name(self):
+        return "%i_%i_%s" % ( self.article_id, self.id, self.slug, )

@@ -18,7 +18,7 @@
         <span tal:condition="article.namespace"
               class="fs-small text-body-secondary"
               tal:content="article.namespace" />
-        <small class="fs-6 text-body-secondary">(F5)</small>
+        <small class="fs-6 text-body-secondary">(F4)</small>
       </a>
     </div>
   </metal:block>
@@ -28,13 +28,20 @@
       <li class="nav-item">
         <a class="nav-link ${linkman.cls('title')} f-key"
            tal:attributes="href linkman.href('title')">
-          Title and format <small>(F6)</small>
+          Title and format <small>(F5)</small>
         </a>
       </li>
       <li class="nav-item">
         <a class="nav-link ${linkman.cls('source')} f-key"
-           tal:attributes="href linkman.href('source')">
-          Source <small>(F7)</small>
+           tal:attributes="href linkman.href('source');">
+          Source <small>(F6)</small>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link ${linkman.cls('bibtex')} f-key"
+           tal:attributes="href linkman.href('bibtex')">
+          BibT<span style="position:relative; top:.2em">E</span>X
+          <small>(F7)</small>
         </a>
       </li>
       <li class="nav-item">

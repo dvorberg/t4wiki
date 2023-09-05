@@ -61,10 +61,10 @@
         </div>
 
         <div class="mb-3"
-             tal:define="default article.root_language|languages[0].iso;
+             tal:define="d languages[0].iso;
+                         default test(rget('id'), article.root_language, d);
                          value rget('lang', default)">
           <label class="form-label">Language</label>
-
           <div>
             <tal:block tal:repeat="lang languages">
               <div class="form-check form-check-inline"
@@ -129,7 +129,7 @@
                   onclick="document.querySelector('#followup').value = 'source'"
                   class="btn btn-success">Submit + Edit Source</button>
         </div>
-      </form>
+      </form>     
     </main>    
   </body>
 </html>

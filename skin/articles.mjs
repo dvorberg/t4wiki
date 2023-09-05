@@ -108,6 +108,26 @@ class ArticleManager
 }
 
 
+class FileManager
+{
+    constructor(file_info)
+    {
+        this.files_by_article_id = {};
+        for (const article_id in file_info)
+        {
+            this.files_by_article_id[parseInt(article_id)] =
+                file_info[article_id];
+        }
+        
+        document.addEventListener("DOMContentLoaded",
+                                  this.on_dom_content_loaded.bind(this));
+    }
 
-export { ArticleManager };
+    on_dom_content_loaded(event)
+    {
+        
+    }
+}
+
+export { ArticleManager, FileManager };
 

@@ -53,11 +53,15 @@ class User(object):
 
     @property
     def is_manager(self):
-        return self.has_role("Manager")
+        return self.has_role("Reader")
 
     @property
     def is_writer(self):
         return self.has_role("Writer")
+
+    @property
+    def is_manager(self):
+        return self.has_role("Manager")
 
 class AnonymousUser(User):
     def __init__(self):
@@ -111,6 +115,9 @@ class role_required:
 
         @functools.wraps(func)
         def wrapped_func(*args, **kwargs):
+            if get_user().is_anonymous:
+                raise Unauthorized()
+
             if not get_user().has_role(*self.roles):
                 raise Forbidden()
 

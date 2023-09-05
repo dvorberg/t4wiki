@@ -5,8 +5,9 @@ set search_path = wiki, public;
 DROP VIEW IF EXISTS article_info CASCADE;
 CREATE VIEW article_info AS
    SELECT id, uuid,
-          title AS main_title, namespace, root_language, format,
-          ignore_namespace
+          title AS main_title, namespace, ignore_namespace,
+          root_language, format,
+          bibtex_key
      FROM article
      LEFT JOIN article_title ON article_id = article.id AND is_main_title;
 
@@ -15,7 +16,7 @@ DROP VIEW IF EXISTS article_for_view CASCADE;
 CREATE VIEW article_for_view AS
     SELECT id, title AS main_title, namespace, root_language,
            current_html,
-           user_info::TEXT, macro_info::TEXT           
+           bibtex::TEXT, user_info::TEXT, macro_info::TEXT           
       FROM article
       LEFT JOIN article_title ON article_id = article.id AND is_main_title;
 
@@ -31,8 +32,9 @@ CREATE VIEW article_fulltitle AS
 
 DROP VIEW IF EXISTS article_main_title CASCADE;
 CREATE VIEW article_main_title AS
-    SELECT article_id, title, namespace, fulltitle, is_main_title
-      FROM article_fulltitle;
+    SELECT article_id, title, namespace, fulltitle
+      FROM article_fulltitle
+     WHERE is_main_title;
 
 DROP VIEW IF EXISTS article_namespace CASCADE;
 CREATE VIEW article_namespace AS
@@ -100,5 +102,50 @@ SELECT article_teaser.article_id,
   LEFT JOIN article_title
     ON article_title.article_id = article_teaser.article_id
     AND is_main_title;
-    
+
+DROP VIEW IF EXISTS current_article_revision CASCADE;
+CREATE VIEW current_article_revision AS
+    SELECT id,
+           fulltitle,
+           root_language,
+           format,
+           source,
+           user_info_source,
+           bibtex_source,
+           NOW()
+      FROM article
+      LEFT JOIN article_main_title ON article_id = id;
+
+
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+
+set search_path = uploads, public;
+
+DROP VIEW IF EXISTS upload_info CASCADE;
+CREATE VIEW upload_info AS
+   SELECT id, article_id, filename, title, description, gallery,
+          is_download, sortrank, width, height, ctime, slug,
+          length(data) AS size
+     FROM upload;
+
+DROP VIEW IF EXISTS upload_info_for_view CASCADE;
+CREATE VIEW upload_info_for_view AS
+WITH
+upload_info_by_filename AS (
+    SELECT article_id,
+           filename,
+           jsonb_build_object('id', id,
+                              'slug', slug,
+                              'width', width,
+                              'height', height,
+                              'size', size,
+                              'title', title,
+                              'description', description) AS upload_info
+      FROM upload_info
+)
+SELECT article_id, json_object_agg(filename, upload_info) AS uploads_info
+  FROM upload_info_by_filename
+ GROUP BY article_id;
+
+
 COMMIT;

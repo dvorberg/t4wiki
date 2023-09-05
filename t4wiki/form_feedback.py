@@ -1,4 +1,4 @@
-import html
+from html import escape as html_escape
 
 from .utils import rget
 import t4.res
@@ -6,7 +6,7 @@ from t4.typography import parse_german_date
 
 from ll.xist import xsc
 from ll.xist import parse as xist_parse
-from ll.xist.ns import html as xist_html_ns
+from ll.xist.ns import html
 
 
 # Dummy
@@ -42,13 +42,20 @@ class FieldFeedback:
         return (not self._is_valid)
 
     def __str__(self):
-        return self._feedback.format(*self._args, **self._kw)
+        if isinstance(self._feedback, xsc.Node):
+            return self._feedback.string()
+        else:
+            return self._feedback.format(*self._args, **self._kw)
 
     @property
     def html(self):
         if self.is_invalid:
-            return '<div class="invalid-feedback">%s</div>' % (
-                html.escape(str(self)), )
+            if isinstance(self._feedback, xsc.Node):
+                return html.div(self._feedback,
+                                class_="invalid-feedback")
+            else:
+                return '<div class="invalid-feedback">%s</div>' % (
+                    html_escape(str(self)), )
         else:
             return ''
 
@@ -181,8 +188,8 @@ class FormFeedback:
             node = xist_parse.tree(
                 xist_parse.String(value.encode("utf-8")),
                 xist_parse.Expat(),
-                xist_parse.NS(xist_html_ns),
-                xist_parse.Node(pool=xsc.Pool(xist_html_ns)))
+                xist_parse.NS(html),
+                xist_parse.Node(pool=xsc.Pool(html)))
         except Exception as e:
             self.give(field_name, str(e))
 
