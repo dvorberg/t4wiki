@@ -35,10 +35,10 @@
             enctype="multipart/form-data">
         
         <div class="mb-3">
-          <div tal:define="fb feedback.on('main_title')">
-            <label for="main_title" class="form-label">Title</label>
-            <input type="text" id="main_title"
-                   tal:attributes="value article.rget('main_title');
+          <div tal:define="fb feedback.on('fulltitle')">
+            <label for="fulltitle" class="form-label">Title</label>
+            <input type="text" id="fulltitle"
+                   tal:attributes="value article.rget('fulltitle');
                                    class string:form-control ${fb.cls}"/>
             <div class="form-check"
                  tal:define="value article.rchecked('ignore_namespace', False)">
