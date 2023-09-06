@@ -2,16 +2,6 @@ BEGIN;
 
 set search_path = wiki, public;
 
-DROP VIEW IF EXISTS article_info CASCADE;
-CREATE VIEW article_info AS
-   SELECT id, uuid,
-          title AS main_title, namespace, ignore_namespace,
-          root_language, format,
-          bibtex_key
-     FROM article
-     LEFT JOIN article_title ON article_id = article.id AND is_main_title;
-
-
 DROP VIEW IF EXISTS article_for_view CASCADE;
 CREATE VIEW article_for_view AS
     SELECT id, title AS main_title, namespace, root_language,
@@ -41,6 +31,14 @@ CREATE VIEW article_namespace AS
     SELECT article_id, namespace
       FROM article_title
      WHERE is_main_title = true;
+
+DROP VIEW IF EXISTS article_info CASCADE;
+CREATE VIEW article_info AS
+   SELECT id, uuid,
+          title AS main_title, namespace, fulltitle, ignore_namespace, 
+          root_language, format, bibtex_key, source_md5
+     FROM article
+     LEFT JOIN article_fulltitle ON article_id = article.id AND is_main_title;
 
 DROP VIEW IF EXISTS article_link_ranks CASCADE;
 CREATE VIEW article_link_ranks AS 
