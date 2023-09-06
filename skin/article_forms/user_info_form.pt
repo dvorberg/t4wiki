@@ -32,12 +32,14 @@
         <div class="mb-3"
              tal:define="fb feedback.on('user_info_source');
                          value article.rget('user_info_source')">
-          <label for="aliases" class="form-label">User Info</label>
+          <label for="aliases" class="form-label">
+            User Info (see <a href="http://toml.io" target="_new">toml.io</a>)
+          </label>
 
           <div tal:replace="structure fb.html" />
           
-          <textarea id="user-info-source" rows="20"
-                    tal:attributes="class string:form-control ${fb.cls}"
+          <textarea id="user-info-source" rows="20" 
+                    tal:attributes="class string:font-monospace form-control ${fb.cls}"
                     tal:content="value">
           </textarea>
 

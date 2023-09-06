@@ -82,25 +82,8 @@
                              tal:attributes="value upload.filename" />
                     </div>
                     
-                    <div class="mb-1 row">
-                      <div class="col-auto">
-                        <label class="col-form-label"
-                               tal:attributes="for string:sortrank-${upload.id}"
-                            >Sort rank</label>
-                      </div>
-                      <div class="col-auto">
-                        <input class="sortrank form-control form-control-sm"
-                               size="3"
-                               name="sortrank"
-                               placeholder="Sort"
-                               tal:attributes="value '%.2f' % upload.sortrank;
-                                               id string:sortrank-${upload.id}"
-                               />
-                      </div>
-                    </div>
-                    
                     <div class="mb-1">
-                      <div class="form-check form-check-inline">
+                      <div class="form-check col-auto form-check-inline">
                         <input type="checkbox" name="gallery"
                                class="form-check-input"
                                tal:attributes="checked ptutils.checked(upload.gallery);
@@ -118,22 +101,55 @@
                                                id string:is-download-${upload.id}" />
                         <label class="form-check-label"
                                tal:attributes="for string:is-download-${upload.id}"> 
-                          Download
+                          is a Download
                         </label>
                       </div>
-                      <a type="button" class="btn btn-danger btn-sm"
-                         style="float:right"
-                         href="${skin.site_url}/articles/delete_upload.cgi?upload_id=${upload.id}&amp;article_id=${article.id}"
-                         onclick="return confirm('Do you you really want to delete this upload?')">
-                        <i class="icon icon-trash"></i>
-                      </a>
+                    </div>
+                    
+                    <div class="mb-1 row">
+                      <div class="col-auto pe-1">
+                        <label class="col-form-label"
+                               style="position: relative; top:-3px"
+                               tal:attributes="for string:sortrank-${upload.id}"
+                            >Sort rank:</label> 
+                      </div>
+                      <div class="col-auto ps-0">
+                        <input class="sortrank form-control form-control-sm"
+                               size="3"
+                               name="sortrank"
+                               placeholder="Sort"
+                               tal:attributes="value '%.2f' % upload.sortrank;
+                                               id string:sortrank-${upload.id}"
+                               />
+                      </div>
+                      <div class="col text-end">
+                        <a href="${skin.site_url}/articles/download_upload.cgi?id=${upload.id}"
+                           class="btn btn-sm btn-success me-2">
+                          <i class="icon icon-download"></i>
+                        </a>
+                        <a type="button" class="btn btn-danger btn-sm"
+                           style="float:right"
+                           href="${skin.site_url}/articles/delete_upload.cgi?upload_id=${upload.id}&amp;article_id=${article.id}"
+                           onclick="return confirm('Do you you really want to delete this upload?')">
+                          <i class="icon icon-trash"></i>
+                        </a>
+                      </div>
                     </div>                    
                   </div>
                 </div>
               </div>
-            </div>            
-          </div>          
+            </div>
+            
+            <div class="row mt-3 ps-2">
+              <a class="text-primary" style="text-decoration: none"
+                 href="${skin.site_url}/articles/update_sortranks.cgi?article_id=${article.id}">
+                <i class="icon icon-refresh"></i>
+                Clean up sort ranks
+              </a>
+            </div>
+          </div>
         </div>
+
 
         <form class="form" 
               method="post"

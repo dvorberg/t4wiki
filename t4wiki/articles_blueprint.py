@@ -1,5 +1,5 @@
 import os.path as op, re, string, datetime, io, json, time, tomllib, pathlib
-import subprocess
+import subprocess, urllib.parse, mimetypes
 from PIL import Image
 
 from flask import (current_app as app, Blueprint, url_for,
@@ -24,7 +24,7 @@ from .utils import (gets_parameters_from_request, guess_language, get_languages,
                     get_site_url)
 from .form_feedback import FormFeedback, NullFeedback
 from . import model
-from .db import insert_from_dict, commit, query_one, execute
+from .db import insert_from_dict, commit, query_one, execute, cursor
 from .markup import Title, tools_by_format, update_titles_for, compile_article
 from .authentication import login_required, role_required
 
@@ -470,3 +470,52 @@ def delete_upload(article_id:int, upload_id:int):
     commit()
 
     return redirect(url_for("articles.files_form") + "?id=%i" % article_id)
+
+
+@bp.route("/update_sortranks.cgi")
+@role_required("Writer")
+@gets_parameters_from_request
+def update_sortranks(article_id:int):
+    with cursor() as cc:
+        cc.execute("SELECT id FROM uploads.upload "
+                   " WHERE article_id = %s "
+                   " ORDER BY sortrank", (article_id,))
+
+        for idx, (id,) in enumerate(cc.fetchall()):
+            cc.execute("UPDATE uploads.upload "
+                       "   SET sortrank = %s::FLOAT "
+                       " WHERE id = %s" % ( idx+1, id, ))
+    commit()
+
+    return redirect(url_for("articles.files_form") + "?id=%i" % article_id)
+
+
+@bp.route("/download_upload.cgi")
+@role_required("Writer")
+@gets_parameters_from_request
+def download_upload(id:int):
+    with cursor() as cc:
+        cc.execute("SELECT filename, data FROM uploads.upload "
+                   " WHERE id = %s ", (id,))
+
+        filename, data = cc.fetchone()
+
+    print(len(data), type(data))
+
+    response = make_response(bytes(data), 200)
+    mimetype, subtype = mimetypes.guess_type(filename)
+    if not mimetype:
+        mimetype = "application/octet-stream"
+    response.headers["Content-Type"] = mimetype
+
+    filename_q = urllib.parse.quote(filename)
+    filename_repl = filename.replace('"', "'")
+
+    # filename* documented here:
+    # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
+    response.headers["Content-Disposition"] = (f'attachment; '
+                                               f'filename="{filename_repl}"; '
+                                               f'filename*="{filename_q}";')
+    response.headers["Cache-Control"] = "max-age=6048000" # 10 weeks
+
+    return response

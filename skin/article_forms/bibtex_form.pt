@@ -40,7 +40,7 @@
           <div tal:replace="structure fb.html" />
           
           <textarea id="bibtex-source" rows="20"
-                    tal:attributes="class string:form-control ${fb.cls}"
+                    tal:attributes="class string:font-monospace form-control ${fb.cls}"
                     tal:content="value">
           </textarea>
 
