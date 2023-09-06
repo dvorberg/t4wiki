@@ -126,8 +126,8 @@ CREATE VIEW upload_info AS
    SELECT id, article_id, filename, title, description, gallery,
           is_download, sortrank, width, height, ctime, slug,
           substring(filename, '(\.[^\.]+$)') AS ext,
-          CASE WHEN  substring(filename, '(\.[^\.]+$)') = '.jpg' THEN '.jpg'
-               ELSE '.png'
+          CASE WHEN  substring(filename, '(\.[^\.]+$)') = '.png' THEN '.png'
+               ELSE '.jpg'
           END AS preview_ext,
           length(data) AS size
      FROM upload;
