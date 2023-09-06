@@ -363,6 +363,14 @@ def create_previews_for_all():
     commit()
 
 separator_re = re.compile(r"[/\\:]")
+def sanitize_filename(filename):
+    filename = filename.replace("..", "_") # For security.
+    # Remove path separators from the filename, just in case.
+    parts = separator_re.split(filename)
+    filename = parts[-1]
+
+    return filename
+
 @bp.route("/files_form.cgi", methods=("GET", "POST"))
 @role_required("Writer")
 @gets_parameters_from_request
@@ -376,10 +384,10 @@ def files_form(id:int):
         for file in request.files.getlist("files"):
             # When there is no file, the Browser sends am empty one.
             if file.filename != "":
-                filename = file.filename.replace("..", "_") # For security.
-                # Remove path separators from the filename, just in case.
-                parts = separator_re.split(filename)
-                filename = parts[-1]
+                filename = sanitize_filename(file.filename)
+
+                name, ext = op.splitext(filename)
+                ext = ext.lower()
 
                 count, = query_one("SELECT COUNT(*) FROM uploads.upload "
                                    " WHERE article_id = %s "
@@ -391,7 +399,9 @@ def files_form(id:int):
                     upload = { "article_id": id,
                                "filename": filename,
                                "data": file.read(),
-                               "slug": slug(20), }
+                               "slug": slug(20),
+                               "is_download": ext == ".pdf"
+                              }
                     upload_id = insert_from_dict("uploads.upload", upload)
 
                     upload["id"] = upload_id
@@ -415,3 +425,48 @@ def delete(id:int):
     execute("DELETE FROM wiki.article WHERE id = %i" % id)
     commit()
     return redirect(get_site_url())
+
+@bp.route("/modify_upload.cgi", methods=("POST",))
+@role_required("Writer")
+@gets_parameters_from_request
+def modify_upload(article_id:int, upload_id:int, name, value):
+    assert name in { "title", "description", "filename", "is_download",
+                     "gallery", "sortrank" }, ValueError
+
+    if name == "sortrank":
+        value = float(value)
+    elif name in { "gallery", "is_download" }:
+        value = bool(value == "true")
+    elif name == "filename":
+        value = sanitize_filename(value)
+
+        # Verify no other upload (in this article_id) has that filename.
+        count, = query_one(sql.select(
+            ("COUNT(*)",),
+            ("uploads.upload",),
+            sql.where("article_id = %i " % article_id,
+                      "AND id <> %i " % upload_id,
+                      "AND filename =", sql.string_literal(value))))
+        if count > 0:
+            return make_response(f"A file named “{value}” already exists.",
+                                 409) # 409 => “Conflict”
+
+    data = { name: value }
+    command = sql.update(model.Upload.__relation__,
+                         sql.where("article_id = %i" % article_id,
+                                   " AND id = %i" % upload_id),
+                         data)
+    execute(command)
+    commit()
+
+    return make_response("Ok", 200)
+
+@bp.route("/delete_upload.cgi")
+@role_required("Writer")
+@gets_parameters_from_request
+def delete_upload(article_id:int, upload_id:int):
+    execute("DELETE FROM uploads.upload WHERE id = %i AND article_id = %i" % (
+        upload_id, article_id))
+    commit()
+
+    return redirect(url_for("articles.files_form") + "?id=%i" % article_id)
