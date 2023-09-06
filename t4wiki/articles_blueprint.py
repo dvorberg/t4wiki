@@ -59,7 +59,7 @@ class LinkMan(object):
 @role_required("Writer")
 @gets_parameters_from_request
 def title_form(id:int=None,
-               main_title=None,
+               fulltitle=None,
                aliases="",
                ignore_namespace:bool=False,
                lang=None,
@@ -70,9 +70,9 @@ def title_form(id:int=None,
     if request.method == "POST":
         feedback = FormFeedback()
 
-        feedback.validate_not_empty("main_title")
+        feedback.validate_not_empty("fulltitle")
 
-        main_title = Title.parse(main_title, ignore_namespace)
+        main_title = Title.parse(fulltitle, ignore_namespace)
 
         # Check titles with the database.
         titles = aliases.split("\n")
@@ -100,7 +100,7 @@ def title_form(id:int=None,
                 msg = (f"“{title}” is already used by an article named "
                        f"“{other}”.")
                 if idx == 0:
-                    feedback.give( "main_title", msg )
+                    feedback.give( "fulltitle", msg )
                 else:
                     feedback.give( "aliases", msg)
 
@@ -347,7 +347,6 @@ def create_image_previews_for(preview_dir, upload):
                     "%ix%i" % ( size, size, ),
                     str(outfilepath) ]
 
-            print(cmd)
             done = subprocess.run(cmd)
 
             if done.returncode != 0:
@@ -499,8 +498,6 @@ def download_upload(id:int):
                    " WHERE id = %s ", (id,))
 
         filename, data = cc.fetchone()
-
-    print(len(data), type(data))
 
     response = make_response(bytes(data), 200)
     mimetype, subtype = mimetypes.guess_type(filename)
