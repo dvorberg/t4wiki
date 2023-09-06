@@ -42,6 +42,7 @@ CREATE TABLE article
     
     root_language language NOT NULL,    
     source TEXT NOT NULL DEFAULT '',
+    source_md5 CHAR(32),
     format format NOT NULL,
     current_html TEXT NOT NULL DEFAULT '',
 
@@ -59,6 +60,19 @@ CREATE TABLE article
     ctime TIMESTAMP NOT NULL DEFAULT NOW(),
     mtime TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+CREATE OR REPLACE FUNCTION public.update_source_md5() RETURNS trigger AS'
+BEGIN
+  /* Funktion liefert aktuellen Timestamp fuer Feld modification_time */
+  NEW.source_md5 = MD5(NEW.source);
+  RETURN NEW;
+END;
+' LANGUAGE 'plpgsql'; 
+
+CREATE TRIGGER update_source_md5_on_article
+   AFTER INSERT OR UPDATE ON article FOR EACH ROW
+   EXECUTE PROCEDURE update_source_md5();
+
 
 CREATE TRIGGER update_mtime_on_article
    AFTER INSERT OR UPDATE ON article FOR EACH ROW
