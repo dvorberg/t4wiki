@@ -70,12 +70,12 @@ END;
 ' LANGUAGE 'plpgsql'; 
 
 CREATE TRIGGER update_source_md5_on_article
-   AFTER INSERT OR UPDATE ON article FOR EACH ROW
+   BEFORE INSERT OR UPDATE ON article FOR EACH ROW
    EXECUTE PROCEDURE update_source_md5();
 
 
 CREATE TRIGGER update_mtime_on_article
-   AFTER INSERT OR UPDATE ON article FOR EACH ROW
+   BEFORE INSERT OR UPDATE ON article FOR EACH ROW
    EXECUTE PROCEDURE update_mtime();
 
 
