@@ -1,5 +1,5 @@
 import os.path as op, re, string, datetime, io, json, time, tomllib, pathlib
-import subprocess, urllib.parse, mimetypes
+import subprocess, urllib.parse, mimetypes, unicodedata
 from PIL import Image
 
 from flask import (current_app as app, Blueprint, url_for,
@@ -25,7 +25,8 @@ from .utils import (gets_parameters_from_request, guess_language, get_languages,
 from .form_feedback import FormFeedback, NullFeedback
 from . import model
 from .db import insert_from_dict, commit, query_one, execute, cursor
-from .markup import Title, tools_by_format, update_titles_for, compile_article
+from .markup import (Title, tools_by_format, update_titles_for, compile_article,
+                     normalize_source, )
 from .authentication import login_required, role_required
 
 bp = Blueprint("articles", __name__, url_prefix="/articles")
@@ -173,6 +174,8 @@ def source_form(id:int, source=None):
     if request.method == "POST":
         feedback = FormFeedback()
 
+        source = normalize_source(source)
+
         titles = model.ArticleTitle.select(
             sql.where("article_id = %i" % article.id))
         titles = [ Title.from_db(title) for title in titles ]
@@ -180,7 +183,7 @@ def source_form(id:int, source=None):
         try:
             html, tsearch, links, includes, macro_info = compile_article(
                 titles,
-                source.replace("\r", ""),
+                source,
                 article.format,
                 get_languages().by_iso(article.root_language),
                 article.user_info)
