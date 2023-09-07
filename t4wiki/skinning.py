@@ -25,15 +25,6 @@ startup_time = time.time()
 module_load_lock = threading.Lock()
 module_cache = {}
 
-def cached_property_maybe(f):
-    """
-    If debugging is on, do not cache these properties.
-    """
-    if debug:
-        return f
-    else:
-        return functools.cached_property(f)
-
 class TemplateWithCustomRenderMethod(chameleon.PageTemplateFile):
     auto_reload = debug
 
@@ -192,11 +183,9 @@ class Skin(object):
                  "test": ptutils.test,
                  "ptutils": ptutils, }
 
-    @cached_property_maybe
     def resource_exists(self, path) -> bool:
         return self._paths.first_that_has(path) is not None
 
-    @cached_property_maybe
     def resource_path(self, path)-> Path:
         skinpath = self._paths.first_that_has(path)
         if skinpath is None:
@@ -266,7 +255,7 @@ def html_files(template_path):
                 startup_time)
         return response
 
-    elif template_path.suffix == ".py":
+    elif path.suffix == ".py":
         match = template_path_re.match(path.name)
         if match is None:
             raise ValueError(f"Illegal template name {template_path}.")
