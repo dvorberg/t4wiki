@@ -1,4 +1,4 @@
-import io, re
+import io, re, unicodedata
 from typing import NamedTuple, List
 
 from t4 import sql
@@ -82,6 +82,9 @@ class Title(NamedTuple):
 def normalize_title(title, ignore_namespace=False):
     return parse_title(title, ignore_namespace).normalized()
 
+def normalize_source(source):
+    source = source.replace("\r", "")
+    return unicodedata.normalize("NFC", source)
 
 def format_by_suffix(suffix):
     if suffix.startswith("."):
