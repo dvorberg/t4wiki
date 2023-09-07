@@ -17,7 +17,7 @@ CREATE VIEW article_fulltitle AS
           WHEN namespace IS NULL THEN title
           WHEN namespace IS NOT NULL THEN (
              (title || ' (') || namespace) || ')'
-        END) as fulltitle
+        END)::citext as fulltitle
      FROM article_title;
 
 DROP VIEW IF EXISTS article_main_title CASCADE;
