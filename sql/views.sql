@@ -34,8 +34,7 @@ CREATE VIEW article_namespace AS
 
 DROP VIEW IF EXISTS article_info CASCADE;
 CREATE VIEW article_info AS
-   SELECT id, uuid,
-          title AS main_title, namespace, fulltitle, ignore_namespace, 
+   SELECT id, title AS main_title, namespace, fulltitle, ignore_namespace, 
           root_language, format, bibtex_key, source_md5
      FROM article
      LEFT JOIN article_fulltitle ON article_id = article.id AND is_main_title;

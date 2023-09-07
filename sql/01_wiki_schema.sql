@@ -36,7 +36,6 @@ CREATE TYPE format AS ENUM ( 'wikkly', 'wikitext', 'html' );
 CREATE TABLE article
 (
     id SERIAL PRIMARY KEY,
-    uuid UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
 
     ignore_namespace BOOLEAN NOT NULL DEFAULT false,
     
