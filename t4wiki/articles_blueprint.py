@@ -1,5 +1,5 @@
-import os.path as op, re, string, datetime, io, json, time, tomllib, pathlib
 import subprocess, urllib.parse, mimetypes, unicodedata
+import os.path as op, re, string, datetime, io, json, time, tomllib, pathlib
 from PIL import Image
 
 from flask import (current_app as app, Blueprint, url_for,
@@ -25,7 +25,8 @@ from .utils import (gets_parameters_from_request, guess_language, get_languages,
 from .form_feedback import FormFeedback, NullFeedback
 from . import model
 from .db import insert_from_dict, commit, query_one, execute, cursor
-from .markup import (Title, tools_by_format, update_titles_for, compile_article,
+from .markup import (Title, tools_by_format, compile_article,
+                     update_titles_for, update_links_for, update_includes_for,
                      normalize_source, )
 from .authentication import login_required, role_required
 
@@ -197,7 +198,12 @@ def source_form(id:int, source=None):
 
             article.update_db( source=source,
                                current_html=html,
-                               tsvector=sql.expression(tsearch) )
+                               tsvector=sql.expression(tsearch),
+                               macro_info=sql.json_literal(macro_info) )
+
+            update_links_for(id, links)
+            update_includes_for(id, includes)
+
             commit()
             return redirect(article.href)
 
