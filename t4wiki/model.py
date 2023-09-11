@@ -64,9 +64,15 @@ class Article(dbobject, has_title_and_namespace):
 
     @property
     def user_info(self):
-        source, = query_one("SELECT user_info "
-                            "  FROM wiki.article WHERE id = %i" % self.id)
-        return source
+        if not hasattr(self, "_user_info"):
+            self._user_info, = query_one(
+                "SELECT user_info "
+                "  FROM wiki.article WHERE id = %i" % self.id)
+        return self._user_info
+
+    @user_info.setter
+    def user_info(self, i):
+        self._user_info = i
 
     @property
     def user_info_source(self):
