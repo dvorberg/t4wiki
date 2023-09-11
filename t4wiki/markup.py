@@ -170,10 +170,23 @@ def update_titles_for(id, titles, root_language):
                               "is_main_title": bool(index == 0)
                           }, retrieve_id=False)
 
+def update_links_for(id, links):
+    execute("DELETE FROM wiki.article_link WHERE article_id = %i" % id)
+    for link in links:
+        insert_from_dict( "wiki.article_link",
+                          { "article_id": id, "target_title": link },
+                          retrieve_id=False)
+
+def update_includes_for(id, includes):
+    execute("DELETE FROM wiki.article_include WHERE article_id = %i" % id)
+    for include in includes:
+        insert_from_dict( "wiki.article_include",
+                          { "article_id": id, "wants_to_include": include },
+                          retrieve_id=False)
 
 
 def store_article(id, titles, ignore_namespace,
-                  root_language, source, format, uuid=None):
+                  root_language, source, format):
     """
     INSERT or UPDATE an article in the database and all the
     depending tables.
@@ -213,9 +226,6 @@ def store_article(id, titles, ignore_namespace,
 
     # Article contents
     if id is None:
-        if uuid is not None:
-            article["uuid"] = uuid
-
         id = insert_from_dict("wiki.article", article)
     else:
         execute(sql.update("wiki.article",
@@ -226,19 +236,10 @@ def store_article(id, titles, ignore_namespace,
     update_titles_for(id, titles, root_language)
 
     # Links
-    execute("DELETE FROM wiki.article_link WHERE article_id = %i" % id)
-    for link in links:
-        insert_from_dict( "wiki.article_link",
-                          { "article_id": id, "target_title": link },
-                          retrieve_id=False)
+    update_links_for(id, links)
 
     # Includes
-    execute("DELETE FROM wiki.article_include WHERE article_id = %i" % id)
-    for include in includes:
-        insert_from_dict( "wiki.article_include",
-                          { "article_id": id, "wants_to_include": include },
-                          retrieve_id=False)
-
+    update_includes_for(id, includes)
 
     return id
 
