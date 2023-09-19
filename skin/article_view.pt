@@ -136,7 +136,7 @@
         </p>
         <p tal:condition="not:regular_result">
           Create article 
-          <a tal:attributes="href string:/articles/title_form.cgi?title=${query}"
+          <a tal:attributes="href string:/articles/title_form.cgi?fulltitle=${query}"
              class="text-danger">
             ${query}</a>!
         </p>
