@@ -102,7 +102,8 @@
                 </small>
               </div>
               …<span tal:replace="structure entry.headline" />…
-              <a class="stretched-link" href="/${entry.full_title}">more</a>
+              <a class="stretched-link"
+                 href="/${entry.full_title}">more</a>
             </li>
           </ol>
 
@@ -135,7 +136,7 @@
         </p>
         <p tal:condition="not:regular_result">
           Create article 
-          <a tal:attributes="href string:$/article_title_form.cgi?title=${query}"
+          <a tal:attributes="href string:/articles/title_form.cgi?title=${query}"
              class="text-danger">
             ${query}</a>!
         </p>
