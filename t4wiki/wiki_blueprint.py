@@ -65,16 +65,12 @@ CREATE TEMPORARY VIEW search_result AS
       GROUP BY article_id, title, namespace, rank, headline;
 '''
 
-
 @bp.route("/")
 @bp.route("/<path:article_title>")
 @role_required("Reader")
 def article_view(article_title=None):
     if article_title is None:
         article_title = ""
-
-    # Everything after ? (even when quoted!) is removed from the path.
-    article_title = request.full_path[len(bp.url_prefix)+1:] # Remove "/wiki/"
 
     template = app.skin.load_template("article_view.pt")
 
