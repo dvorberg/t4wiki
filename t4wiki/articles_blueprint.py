@@ -106,7 +106,15 @@ def title_form(id:int=None,
                 else:
                     feedback.give( "aliases", msg)
 
-                break
+            if title.title.endswith("?"):
+                msg = ("A title must not end in “?” due to how ambiguities "
+                       "in URLs are handled by various server and "
+                       "client software products.")
+                if idx == 0:
+                    feedback.give( "fulltitle", msg )
+                else:
+                    feedback.give( "aliases", msg)
+
 
         # This is an internal check.
         # No need to report an error through feedback,
