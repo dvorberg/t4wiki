@@ -1,3 +1,5 @@
+import { title2path } from "t4wiki";
+
 class SearchbarManager
 {       
     constructor()
@@ -52,7 +54,7 @@ class SearchbarManager
         {
             event.preventDefault();
 
-            var href = globalThis.site_url + "/" + this.input.value;
+            var href = globalThis.site_url + "/" + title2path(this.input.value);
 
             if (event.getModifierState("Shift"))
             {
