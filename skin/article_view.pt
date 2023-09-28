@@ -72,7 +72,7 @@
 
           <ul>
             <li tal:repeat="article linking_here">
-              <a tal:attributes="href string:/${article.full_title}">
+              <a tal:attributes="href article.href">
                 ${article.main_title}
                 <small tal:condition="article.namespace"
                        class="text-body-secondary">
@@ -103,12 +103,12 @@
               </div>
               …<span tal:replace="structure entry.headline" />…
               <a class="stretched-link"
-                 href="/${entry.full_title}">more</a>
+                 href="${entry.href}">more</a>
             </li>
           </ol>
 
           <p tal:condition="full_text_count &gt; 10">
-            <a tal:attributes="href string:/${article.full_title}?search">
+            <a tal:attributes="href string:${article.href}?search">
               ${full_text_count-10} more results →
             </a>
           </p>
@@ -124,7 +124,7 @@
         <p tal:condition="regular_result" class="alert alert-info">
           Page available:
           <tal:block tal:define="article regular_result">
-            <a tal:attributes="href string:/${article.full_title}">
+            <a tal:attributes="href article.href">
               ${article.main_title}
               <small tal:condition="article.namespace"
                      class="text-body-secondary"
@@ -164,7 +164,7 @@
               </small>
             </div>
             …<span tal:replace="structure entry.headline" />…
-            <a class="stretched-link" href="/${entry.full_title}">more</a>
+            <a class="stretched-link" href="${entry.href}">more</a>
           </li>
         </ol>        
       </section>
