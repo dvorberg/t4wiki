@@ -3,7 +3,7 @@ import os.path as op, functools
 from flask import url_for
 from t4 import sql
 
-from .utils import get_site_url
+from .utils import get_site_url, title2path
 from .db import dbobject, query_one, cursor, execute_with_template
 
 class has_title_and_namespace:
@@ -18,6 +18,10 @@ class has_title_and_namespace:
             return f"{title} ({self.namespace})"
         else:
             return title
+
+    @property
+    def href(self):
+        return "/" + title2path(self.full_title)
 
 class Article(dbobject, has_title_and_namespace):
     __schema__ = "wiki"
@@ -38,7 +42,7 @@ class Article(dbobject, has_title_and_namespace):
         if not getattr(self, "id"):
             return None
         else:
-            return get_site_url() + "/" + self.full_title
+            return super().href
 
     @property
     def id_where(self):
