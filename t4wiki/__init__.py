@@ -21,13 +21,24 @@ xsc.Node.__html__ = xsc.Node.string
 #xsc.Node.__html__ = xsc__html__
 #
 
-import os
+import os, re
 debug = os.getenv("DEBUG") is not None
 debug_sql = os.getenv("DEBUG_SQL") is not None
 
+from werkzeug import serving
+
+
+quoted_question_mark_re = re.compile("%3[fF]")
+from urllib.parse import unquote
+def my_unquote(s):
+    ret = unquote(s)
+    ret = quoted_question_mark_re.sub("?", ret)
+    return ret
+serving.unquote = my_unquote
+
 def init_app(app):
     app.debug = debug
-    app.debug_sql = debug_sql
+    app.debug_sql = False # debug_sql
 
     from .db import init_app
     init_app(app)
