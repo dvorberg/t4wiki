@@ -9,6 +9,13 @@
 {
     article
     {
+        img.missing
+        {
+            width: 100px;
+            height: 100px;
+            border: red 1px solid;
+        }
+        
         img.float-end
         {
             margin: 0 0 0.5em 0.5em;
