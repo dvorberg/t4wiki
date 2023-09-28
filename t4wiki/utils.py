@@ -20,6 +20,9 @@ import enchant
 def get_languages():
     return app.config["LANGUAGES"]
 
+def title2path(title):
+    return title.replace("?", "%3f")
+
 def redirect(url, **kw):
     if kw:
         if "?" in url:
