@@ -1,3 +1,5 @@
+import { title2path } from "t4wiki";
+
 class ArticleManager
 {
     constructor(id_by_title, info_by_id, link_info)
@@ -90,12 +92,13 @@ class ArticleManager
         // Also set link classes.
         this.article_section.querySelectorAll("a.t4wiki-link").forEach(
             function(a) {
-                var href = decodeURI(a.getAttribute("href")),
-                    fulltitle = self.link_info[href.toLowerCase()];
+                const href = decodeURI(a.getAttribute("href")),
+					  key = href.toLowerCase(),
+					  fulltitle = self.link_info[key];
 
                 if (fulltitle)
                 {
-                    a.setAttribute("href", "/" + fulltitle);
+                    a.setAttribute("href", "/" + title2path(fulltitle));
                     a.classList.add("available");
                 }
                 else
@@ -132,8 +135,9 @@ class FileManager
             for(const img of div.querySelectorAll("img.preview-image"))
             {
                 const filename = decodeURI(img.getAttribute("src")),
-                      fileinfo = this.files_by_article_id[article_id][filename];
-
+                      files = this.files_by_article_id[article_id] || null,
+                      fileinfo = files && files[filename];
+				
                 if (fileinfo)
                 {
                     var size = 300;
@@ -159,6 +163,10 @@ class FileManager
                         caption = fileinfo.title;
                     }
                 }
+				else
+				{
+					img.classList.add("missing");
+				}
             }
         }
     }
