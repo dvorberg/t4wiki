@@ -80,7 +80,7 @@ class SearchbarManager
 
                 event.preventDefault();
             }
-            else if (event.key == "g")
+            else if (event.key == "k")
             {
                 window.location.href = globalThis.site_url;
                 event.preventDefault();
