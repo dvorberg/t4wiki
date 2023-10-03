@@ -132,8 +132,6 @@ class ArticleManager
 
 	on_search_result_loaded(response)
 	{
-		console.log(response);
-
 		const self = this;
 		response.text().then(function(text) {
 			self.search_result_section.innerHTML = text;
