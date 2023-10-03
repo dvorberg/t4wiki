@@ -71,7 +71,8 @@
           <h4>Articles linking here</h4>
 
           <ul>
-            <li tal:repeat="article linking_here">
+            <li tal:repeat="article linking_here"
+                data-article-id="${article.article_id}">
               <a tal:attributes="href article.href">
                 ${article.main_title}
                 <small tal:condition="article.namespace"
@@ -85,33 +86,9 @@
           </ul>
         </section>
         
-        <section tal:condition="len(search_result) != 0"
-                 class="search-result">
-          <h4>Full text search for “${query}”</h4>
-          <p>
-            The full text search yielded ${len(search_result)} entries:
-          </p>
-
-          <ol>
-            <li tal:repeat="entry search_result">
-              <div class="title">
-                ${entry.title}
-                <small tal:condition="entry.namespace"
-                       class="text-body-secondary">
-                  (${entry.namespace})
-                </small>
-              </div>
-              …<span tal:replace="structure entry.headline" />…
-              <a class="stretched-link"
-                 href="${entry.href}">more</a>
-            </li>
-          </ol>
-
-          <p tal:condition="full_text_count &gt; 10">
-            <a tal:attributes="href string:${article.href}?search">
-              ${full_text_count-10} more results →
-            </a>
-          </p>
+        <section class="search-result"
+                 tal:attributes="data-query query;
+                                 data-lang article.root_language">
         </section>
       </aside>
 
