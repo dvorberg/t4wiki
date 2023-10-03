@@ -98,6 +98,9 @@ class ArticleForView(Article):
 class ArticleForRedo(Article):
     __view__ = "article_for_redo"
 
+class ArticleForRecentChangesList(Article):
+    __view__ = "article_for_recent_changes_list"
+
 class IncludedArticle(dbobject):
     # article_id, included_as
 
