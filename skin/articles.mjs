@@ -22,6 +22,27 @@ class ArticleManager
     on_dom_content_loaded(event)
     {
         var self = this;
+
+		// First order of business: Start the full text query on the server.
+		let ids = [];
+		document.querySelectorAll("section.linking-here li").forEach(li => {
+			ids.push(parseInt(li.getAttribute("data-article-id")));
+		});
+		
+		const section = document.querySelector(
+			"aside.article-meta section.search-result");
+		this.search_result_section = section;
+		
+		let params = new URLSearchParams();
+		params.set("query", section.getAttribute("data-query"));
+		params.set("lang", section.getAttribute("data-lang"));
+		params.set("ids", ids.join(","));
+
+		const url = globalThis.site_url
+			  + "/article_fulltext_search?" + params.toString();
+		
+		fetch(url).then(this.on_search_result_loaded.bind(this));
+
         
         // Deal with includes.
         this.main_article = document.querySelector("article.main");
@@ -108,6 +129,16 @@ class ArticleManager
                 }
             });
     }
+
+	on_search_result_loaded(response)
+	{
+		console.log(response);
+
+		const self = this;
+		response.text().then(function(text) {
+			self.search_result_section.innerHTML = text;
+		});
+	}
 }
 
 
