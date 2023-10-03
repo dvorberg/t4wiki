@@ -23,7 +23,7 @@
         {
             width: 100px;
             height: 100px;
-            border: red 1px solid;
+            border: var(--bs-red) 1px solid;
         }
         
         img.float-end
@@ -36,6 +36,51 @@
             img
             {
                 max-width: 100%;
+            }
+        }
+    }
+
+    section.recent-changes
+    {
+        ul
+        {
+            margin-left: 0;
+            padding-left: 0;
+        }
+        
+        li
+        {
+            list-style: none;
+            margin-left: 0;
+            padding-left: 0;
+            margin-bottom: 1em;
+        }
+        
+        a.title
+        {
+            text-decoration: none;
+            color: inherit;
+            font-weight: bold;
+            display: block;
+            font-size: 1.2em;
+
+            code
+            {
+                color: var(--bs-code-color);
+                font-size: 1rem;
+            }
+        }
+
+        div.info
+        {            
+            span.date
+            {
+                color: var(--bs-red);
+            }
+
+            a
+            {
+                text-decoration: none;
             }
         }
     }
