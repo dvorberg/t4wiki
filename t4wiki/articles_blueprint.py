@@ -61,7 +61,7 @@ class LinkMan(object):
 @role_required("Writer")
 @gets_parameters_from_request
 def title_form(id:int=None,
-               fulltitle=None,
+               full_title=None,
                aliases="",
                ignore_namespace:bool=False,
                lang=None,
@@ -72,9 +72,9 @@ def title_form(id:int=None,
     if request.method == "POST":
         feedback = FormFeedback()
 
-        feedback.validate_not_empty("fulltitle")
+        feedback.validate_not_empty("full_title")
 
-        main_title = Title.parse(fulltitle, ignore_namespace)
+        main_title = Title.parse(full_title, ignore_namespace)
 
         # Check titles with the database.
         titles = aliases.split("\n")
@@ -84,37 +84,22 @@ def title_form(id:int=None,
         titles = [main_title] + list(titles)
 
         for idx, title in enumerate(titles):
-            where = sql.where("article_fulltitle.fulltitle  =",
+            where = sql.where("full_title = ",
                               sql.string_literal(title.full_title))
             if id:
-                where = where.and_(sql.where(
-                    "article_fulltitle.article_id <> %i" % id))
+                where = where.and_(sql.where("article_id <> %i" % id))
 
-            result = model.ArticleMainTitle.select(
-                sql.left_join("wiki.article_fulltitle",
-                              "article_fulltitle.article_id = "
-                              "  article_main_title.article_id"),
-                where)
+            result = model.ArticleTitle.select(where)
             result = list(result)
 
             if len(result) > 0:
-                other = result[0].fulltitle
+                other = result[0].full_title
                 msg = (f"“{title}” is already used by an article named "
                        f"“{other}”.")
                 if idx == 0:
-                    feedback.give( "fulltitle", msg )
+                    feedback.give( "full_title", msg )
                 else:
-                    feedback.give( "aliases", msg)
-
-            #if title.title.endswith("?"):
-            #    msg = ("A title must not end in “?” due to how ambiguities "
-            #           "in URLs are handled by various server and "
-            #           "client software products.")
-            #    if idx == 0:
-            #        feedback.give( "fulltitle", msg )
-            #    else:
-            #        feedback.give( "aliases", msg)
-
+                    feedback.give( "aliases", msg )
 
         # This is an internal check.
         # No need to report an error through feedback,
@@ -131,7 +116,8 @@ def title_form(id:int=None,
             # Update the article.
             article = { "ignore_namespace": ignore_namespace,
                         "root_language": lang,
-                        "format": format, }
+                        "format": format,
+                        "mtime": sql.expression("NOW()"), }
             if id:
                 model.Article.update_db(id, **article)
             else:
@@ -142,7 +128,7 @@ def title_form(id:int=None,
             commit()
 
             if followup == "view":
-                return redirect(get_site_url() + "/" + str(main_title))
+                return redirect(get_site_url() + "/" + main_title.path)
             elif followup == "source":
                 return redirect(url_for("articles.source_form") + f"?id={id}")
     else:
@@ -204,10 +190,11 @@ def source_form(id:int, source=None):
                     "    SELECT * FROM wiki.current_article_revision "
                     "     WHERE id = %s", (id,))
 
-            article.update_db( source=source,
-                               current_html=html,
-                               tsvector=sql.expression(tsearch),
-                               macro_info=sql.json_literal(macro_info) )
+            article.update_db(source=source,
+                              current_html=html,
+                              tsvector=sql.expression(tsearch),
+                              mtime=sql.expression("NOW()"),
+                              macro_info=sql.json_literal(macro_info))
 
             update_links_for(id, links)
             update_includes_for(id, includes)
@@ -234,7 +221,8 @@ def bibtex_form(id:int, bibtex_source=None):
         if bibtex_source.strip() == "":
             article.update_db( bibtex_source="",
                                bibtex_key=None,
-                               bibtex=None )
+                               bibtex=None,
+                               mtime=sql.expression("NOW()"), )
 
             commit()
             return redirect(article.href)
@@ -252,28 +240,29 @@ def bibtex_form(id:int, bibtex_source=None):
             key = entry["ID"]
 
             # Verify key uniqueness.
-            result = query_one("SELECT fulltitle "
+            result = query_one("SELECT full_title "
                                "  FROM wiki.article "
-                               "  LEFT JOIN wiki.article_main_title "
+                               "  LEFT JOIN wiki.article_title "
                                "    ON article_id = id "
                                " WHERE id <> %s "
                                "   AND bibtex_key = %s"
                                " LIMIT 1",
                                ( id, key, ))
             if result is not None:
-                fulltitle, = result
-                href = f"{get_site_url()}/fulltitle"
+                full_title, = result
+                href = f"{get_site_url()}/full_title"
                 feedback.give(
                     "bibtex_source",
                     xsc.Frag( f'A BibTeX entry for “{key}” already exists '
                               f'in article “',
-                              html.a(fulltitle, href=href, target="_new"),
+                              html.a(full_title, href=href, target="_new"),
                               "”."))
 
         if feedback.is_valid():
             article.update_db( bibtex_source=bibtex_source,
                                bibtex_key=key,
-                               bibtex=sql.jsonb_literal(entry) )
+                               bibtex=sql.jsonb_literal(entry),
+                               mtime=sql.expression("NOW()"), )
             commit()
             return redirect(article.href)
     else:
@@ -297,7 +286,8 @@ def user_info_form(id:int, user_info_source=None):
             feedback.give("user_info_source", str(exc))
         else:
             article.update_db( user_info_source=user_info_source,
-                               user_info=sql.jsonb_literal(user_info) )
+                               user_info=sql.jsonb_literal(user_info),
+                               mtime=sql.expression("NOW()"), )
             commit()
             return redirect(article.href)
     else:
@@ -533,3 +523,56 @@ def download_upload(id:int):
     response.headers["Cache-Control"] = "max-age=6048000" # 10 weeks
 
     return response
+
+@bp.route("/recent_changes.cgi")
+@role_required("Writer")
+@gets_parameters_from_request
+def recent_changes():
+    template = app.skin.load_template("recent_changes.pt")
+
+    articles = model.ArticleForRecentChangesList.select(
+        sql.orderby("mtime DESC"), sql.limit(20))
+
+    return template(articles=articles)
+
+def redo_all():
+    for article in model.ArticleForRedo.select(sql.orderby("full_title")):
+        print(article.full_title, end="")
+        user_info = tomllib.loads(article.user_info_source)
+
+        titles = [ Title(get_languages().by_iso(d["lang"]),
+                         d["title"],
+                         d["namespace"]) for d in article.titles ]
+
+        # Compile the source to HTML and tsearch.
+        html, tsearch, links, includes, macro_info = compile_article(
+            titles,
+            article.source,
+            article.format,
+            get_languages().by_iso(article.root_language),
+            user_info)
+
+        update_links_for(article.id, links)
+        update_includes_for(article.id, includes)
+
+        # BibTeX
+        if article.bibtex_source:
+            parser = bibtexparser.bparser.BibTexParser()
+            library = parser.parse(article.bibtex_source)
+            entry = library.entries[0]
+            bibtex_entry = library.entries[0]
+            bibtex_key = entry["ID"]
+        else:
+            bibtex_entry = None
+            bibtex_key = None
+
+        # Update the database.
+        article.update_db(user_info=sql.jsonb_literal(user_info),
+                          current_html=html,
+                          tsvector=sql.expression(tsearch),
+                          macro_info=sql.jsonb_literal(macro_info),
+                          bibtex=sql.jsonb_literal(bibtex_entry),
+                          bibtex_key=bibtex_key)
+        print()
+
+    commit()
