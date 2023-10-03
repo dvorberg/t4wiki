@@ -11,6 +11,7 @@ from . import model
 from .exceptions import TitleUnavailable
 from .context import Context, get_languages
 from .db import insert_from_dict, execute, query_one
+from .utils import title2path
 
 title_re = re.compile(r"(?:([a-z]{2,3}):)?(.*?)\s*(?:\((.*)\))?$")
 class Title(NamedTuple):
@@ -67,6 +68,10 @@ class Title(NamedTuple):
             return f"{self.title} ({self.namespace})"
         else:
             return self.title
+
+    @property
+    def path(self):
+        return title2path(self.full_title)
 
     def __eq__(self, other):
         def low(s):
