@@ -105,7 +105,8 @@ def article_view(article_title=None):
         title = markup.Title.parse(article_title)
         if title.namespace:
             query_namespace = title.namespace
-            where = sql.where("namespace = ", sql.string_literal(query_namespace))
+            where = sql.where("namespace = ",
+                              sql.string_literal(query_namespace))
         else:
             where = None
             query_namespace = ""
@@ -163,14 +164,14 @@ def article_view(article_title=None):
             file_info_json = "{}"
 
         link_info, = db.query_one(
-            "SELECT json_object_agg(target, fulltitle)::text "
+            "SELECT json_object_agg(target, full_title)::text "
             "  FROM article_link_resolved "
             " WHERE article_id IN (%s)" % article_ids_s)
 
         linking_here = list(model.ResolvedArticleTeaser.select(
-            sql.where("resolved_fulltitle =",
+            sql.where("resolved_full_title =",
                       sql.string_literal(main_article.full_title)),
-            sql.orderby("main_title, namespace")))
+            sql.orderby("main_title")))
 
         if len(linking_here) == 0:
             where = None
