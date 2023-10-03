@@ -27,7 +27,6 @@ debug_sql = os.getenv("DEBUG_SQL") is not None
 
 from werkzeug import serving
 
-
 quoted_question_mark_re = re.compile("%3[fF]")
 from urllib.parse import unquote
 def my_unquote(s):
@@ -38,7 +37,7 @@ serving.unquote = my_unquote
 
 def init_app(app):
     app.debug = debug
-    app.debug_sql = False # debug_sql
+    app.debug_sql = debug_sql
 
     from .db import init_app
     init_app(app)
