@@ -41,21 +41,22 @@ CREATE TABLE article
     
     root_language language NOT NULL,    
     source TEXT NOT NULL DEFAULT '',
-    source_md5 CHAR(32),
+    source_md5 CHAR(32) GENERATED ALWAYS AS MD5(source) STORED,
     format format NOT NULL,
-    current_html TEXT NOT NULL DEFAULT '',
 
     user_info_source TEXT NOT NULL DEFAULT '',
-    user_info JSONB NOT NULL DEFAULT '{}'::JSONB,
-
-    macro_info JSONB NOT NULL DEFAULT '{}'::JSONB,
 
     bibtex_source TEXT,
     bibtex_key TEXT,
+
+    current_html TEXT NOT NULL,
+    user_info JSONB NOT NULL DEFAULT '{}'::JSONB,
+    macro_info JSONB NOT NULL DEFAULT '{}'::JSONB,
     bibtex JSONB,
 
+    teaser TEXT GENERATED ALWAYS AS (teaser_from_html(current_html)) STORED,
+    
     tsvector tsvector NOT NULL DEFAULT to_tsvector('simple', ''),
-
     ctime TIMESTAMP NOT NULL DEFAULT NOW(),
     mtime TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -68,21 +69,25 @@ BEGIN
 END;
 ' LANGUAGE 'plpgsql'; 
 
-CREATE TRIGGER update_source_md5_on_article
-   BEFORE INSERT OR UPDATE ON article FOR EACH ROW
-   EXECUTE PROCEDURE update_source_md5();
-
-
 CREATE TRIGGER update_mtime_on_article
    BEFORE INSERT OR UPDATE ON article FOR EACH ROW
    EXECUTE PROCEDURE update_mtime();
 
-
 CREATE TABLE article_title
 (
     article_id INTEGER NOT NULL REFERENCES article ON DELETE CASCADE,
+    
     title citext NOT NULL,
     namespace citext,
+
+    full_title citext GENERATED ALWAYS AS (
+        CASE WHEN namespace IS NULL THEN title::text
+             WHEN namespace IS NOT NULL THEN (
+                 (title::text || ' ('::text) || namespace::text) || ')'::text
+             ELSE NULL::text
+        END::citext
+    ) STORED,
+
     language language NOT NULL,
     is_main_title BOOLEAN NOT NULL,
 
