@@ -406,13 +406,14 @@ class dbobject(object, metaclass=SQLRepresentation):
             return result[0]
 
 
-def execute(command, parameters=()):
+def execute(command, parameters=(), cc=None):
     if isinstance(command, sql.Part):
         if parameters:
             raise ValueError("Can’t provide parameters with t4.sql statement.")
         command, parameters = rollup_sql(command)
 
-    cc = cursor()
+    if cc is None:
+        cc = cursor()
     cc.execute(command, parameters)
     return cc
 
@@ -450,3 +451,8 @@ def query_one(command, parameters=()):
     with cursor() as cc:
         cc.execute(command, parameters)
         return cc.fetchone()
+
+def count(relation, where):
+    cmd, params = rollup_sql(where)
+    count, = query_one(f"SELECT COUNT(*) FROM search_result {cmd}", params)
+    return count
