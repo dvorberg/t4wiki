@@ -4,11 +4,14 @@ from flask import url_for
 from t4 import sql
 
 from .utils import get_site_url, title2path
-from .db import dbobject, query_one, cursor, execute_with_template
+from .db import dbobject, query_one, cursor, execute_with_template, execute
 
 class has_title_and_namespace:
     @property
     def full_title(self):
+        if hasattr(self, "_full_title"):
+            return self._full_title
+
         if hasattr(self, "title"):
             title = self.title
         else:
@@ -18,6 +21,10 @@ class has_title_and_namespace:
             return f"{title} ({self.namespace})"
         else:
             return title
+
+    @full_title.setter
+    def full_title(self, t):
+        self._full_title = t
 
     @property
     def href(self):
@@ -54,11 +61,12 @@ class Article(dbobject, has_title_and_namespace):
                             "  FROM wiki.article WHERE id = %i" % self.id)
         return source
 
-    @property
-    def bibtex(self):
-        source, = query_one("SELECT bibtex "
-                            "  FROM wiki.article WHERE id = %i" % self.id)
-        return source
+    # @property
+    # def bibtex(self):
+    #     source, = query_one("SELECT bibtex "
+    #                         "  FROM wiki.article_rendition "
+    #                         " WHERE id = %i" % self.id)
+    #     return source
 
     @property
     def bibtex_source(self):
@@ -84,10 +92,13 @@ class Article(dbobject, has_title_and_namespace):
                             "  FROM wiki.article WHERE id = %i" % self.id)
         return source
 
-class ArticleForView(Article, has_title_and_namespace):
+class ArticleForView(Article):
     __view__ = "article_for_view"
 
-class IncludedArticle(dbobject, has_title_and_namespace):
+class ArticleForRedo(Article):
+    __view__ = "article_for_redo"
+
+class IncludedArticle(dbobject):
     # article_id, included_as
 
     @classmethod
@@ -97,7 +108,7 @@ class IncludedArticle(dbobject, has_title_and_namespace):
         return [ IncludedArticle(cursor.description, tpl)
                  for tpl in cursor.fetchall() ]
 
-class ResolvedArticleLink(dbobject):
+class ResolvedArticleLink(dbobject, has_title_and_namespace):
     __view__ = "article_link_resolved"
 
 class ResolvedArticleTeaser(dbobject, has_title_and_namespace):
@@ -116,11 +127,8 @@ class ArticleTitle(dbobject, has_title_and_namespace):
              END)::citext = """, sql.string_literal(title))
 
     @classmethod
-    def select_by_fulltitle(ArticleTitle, title):
+    def select_by_full_title(ArticleTitle, title):
         return ArticleTitle.select_one(ArticleTitle.title_where(title))
-
-class ArticleMainTitle(ArticleTitle):
-    __view__ = "article_main_title"
 
 class FulltextEntry(dbobject, has_title_and_namespace):
     pass
