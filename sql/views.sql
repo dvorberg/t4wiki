@@ -4,27 +4,25 @@ set search_path = wiki, public;
 
 DROP VIEW IF EXISTS article_for_view CASCADE;
 CREATE VIEW article_for_view AS
-    SELECT id, title AS main_title, namespace, root_language,
-           current_html,
-           bibtex::TEXT, user_info::TEXT, macro_info::TEXT           
+    SELECT id, title AS main_title, namespace, root_language, bibtex_key,
+           current_html, bibtex::TEXT, user_info::TEXT, macro_info::TEXT
       FROM article
-      LEFT JOIN article_title ON article_id = article.id AND is_main_title;
+      LEFT JOIN article_title
+             ON article_title.article_id = article.id AND is_main_title;
 
-DROP VIEW IF EXISTS article_fulltitle CASCADE;
-CREATE VIEW article_fulltitle AS
-    SELECT article_id, title, namespace, is_main_title, (
-        CASE
-          WHEN namespace IS NULL THEN title
-          WHEN namespace IS NOT NULL THEN (
-             (title || ' (') || namespace) || ')'
-        END)::citext as fulltitle
-     FROM article_title;
+DROP VIEW IF EXISTS article_for_redo CASCADE;
+CREATE VIEW article_for_redo AS
+    SELECT full_title, id, ignore_namespace, root_language, 
+           source, format, user_info_source, bibtex_source,
+           ( SELECT json_agg(json_build_object('lang', language,
+                                               'title', title,
+                                               'namespace', namespace))
+               FROM article_title
+              WHERE article_id = article.id ) AS titles
+      FROM article
+ LEFT JOIN article_title ON article_id = id AND is_main_title;
+           
 
-DROP VIEW IF EXISTS article_main_title CASCADE;
-CREATE VIEW article_main_title AS
-    SELECT article_id, title, namespace, fulltitle
-      FROM article_fulltitle
-     WHERE is_main_title;
 
 DROP VIEW IF EXISTS article_namespace CASCADE;
 CREATE VIEW article_namespace AS
@@ -34,76 +32,63 @@ CREATE VIEW article_namespace AS
 
 DROP VIEW IF EXISTS article_info CASCADE;
 CREATE VIEW article_info AS
-   SELECT id, title AS main_title, namespace, fulltitle, ignore_namespace, 
-          root_language, format, bibtex_key, source_md5
+   SELECT id, title AS main_title, namespace, ignore_namespace, root_language,
+          format
      FROM article
-     LEFT JOIN article_fulltitle ON article_id = article.id AND is_main_title;
+LEFT JOIN article_title
+       ON article_title.article_id = article.id AND is_main_title;
 
 DROP VIEW IF EXISTS article_link_ranks CASCADE;
 CREATE VIEW article_link_ranks AS 
     SELECT article_link.article_id,
            target_title AS target,
-           article_fulltitle.fulltitle,
-           CASE WHEN ans.namespace IS NOT NULL
-                 AND article_fulltitle.namespace IS NOT NULL
-                 AND ans.namespace = article_fulltitle.namespace
+           full_title,
+           CASE WHEN source_article.namespace IS NOT NULL
+                 AND article_title.namespace IS NOT NULL
+                 AND source_article.namespace = article_title.namespace
                 THEN 4
 
-                WHEN ans.namespace IS NULL
-                 AND article_fulltitle.namespace IS NOT NULL
+                WHEN source_article.namespace IS NULL
+                 AND article_title.namespace IS NOT NULL
                 THEN 3
 
-                WHEN article_fulltitle.fulltitle = target_title
+                WHEN article_title.full_title = target_title
                 THEN 2
 
                 ELSE 1
-           END AS rank            
+           END AS rank
       FROM article_link
-      LEFT JOIN article_fulltitle
-             ON article_fulltitle.title = target_title
-             OR article_fulltitle.fulltitle = target_title
-      LEFT JOIN article_namespace AS ans
-             ON ans.article_id = article_link.article_id;
+      LEFT JOIN article_title
+             ON article_title.title = target_title
+                 OR article_title.full_title = target_title
+      LEFT JOIN article_namespace AS source_article
+             ON source_article.article_id = article_link.article_id;
 
 DROP VIEW IF EXISTS article_link_resolved CASCADE;
 CREATE VIEW article_link_resolved AS
-    SELECT article_id, target, fulltitle FROM article_link_ranks
-     WHERE rank = (SELECT MAX(rank) FROM article_link_ranks AS inner_
-                    WHERE inner_.article_id = article_link_ranks.article_id
-                      AND inner_.target = article_link_ranks.target);
-
-
-
-DROP VIEW IF EXISTS article_teaser CASCADE;
-CREATE VIEW article_teaser AS
-   SELECT article_id,
-          REGEXP_REPLACE(SUBSTR(current_html, 0, 200),
-                         '<[^>]*>|<[^>]*$', '', 'g') AS teaser,
-          CASE WHEN LENGTH(current_html) > 200 THEN ' …'
-               ELSE ''
-          END AS elipsis
-     FROM article
-     LEFT JOIN article_title
-            ON article_title.article_id = article.id
-           AND article_title.is_main_title;          
+    SELECT article_id, target, full_title
+      FROM article_link_ranks
+     WHERE rank = ( SELECT MAX(rank) FROM article_link_ranks AS inner_
+                     WHERE inner_.article_id = article_link_ranks.article_id
+                       AND inner_.target = article_link_ranks.target );
 
 DROP VIEW IF EXISTS article_teaser_on_resolved CASCADE;
 CREATE VIEW article_teaser_on_resolved AS
-SELECT article_teaser.article_id,
-       article_link_resolved.fulltitle AS resolved_fulltitle,
-       title AS main_title, namespace,
-       teaser, elipsis
-  FROM article_link_resolved
-  LEFT JOIN article_teaser
-    ON article_link_resolved.article_id = article_teaser.article_id
-  LEFT JOIN article_title
-    ON article_title.article_id = article_teaser.article_id
-    AND is_main_title;
+    SELECT article_link_resolved.article_id,
+           article_link_resolved.full_title AS resolved_full_title,
+           article_title.title AS main_title,
+           article_title.namespace,
+           teaser
+      FROM article_link_resolved
+ LEFT JOIN article_title
+        ON article_title.article_id = article_link_resolved.article_id
+            AND is_main_title
+ LEFT JOIN article ON id = article_link_resolved.article_id;
 
 DROP VIEW IF EXISTS current_article_revision CASCADE;
 CREATE VIEW current_article_revision AS
     SELECT id,
-           fulltitle,
+           full_title,
            root_language,
            format,
            source,
@@ -111,7 +96,8 @@ CREATE VIEW current_article_revision AS
            bibtex_source,
            NOW()
       FROM article
-      LEFT JOIN article_main_title ON article_id = id;
+      LEFT JOIN article_title
+           ON article_title.article_id = id AND is_main_title;
 
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
