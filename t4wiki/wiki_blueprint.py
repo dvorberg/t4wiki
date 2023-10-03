@@ -1,4 +1,5 @@
 import re, string, datetime, io, json, time
+from typing import List
 
 from flask import (current_app as app, Blueprint,
                    g, request, session, abort, redirect, make_response)
@@ -15,7 +16,7 @@ from tinymarkup.utils import html_start_tag
 
 from .ptutils import test
 from .context import get_languages
-from .utils import guess_language
+from .utils import guess_language, gets_parameters_from_request
 from .authentication import login_required, role_required
 from . import markup
 from . import model
@@ -50,25 +51,43 @@ CREATE TEMPORARY VIEW the_query AS
     SELECT websearch_to_tsquery(%(tsearch_config)s, %(query)s) AS query;
 
 CREATE TEMPORARY VIEW search_result AS
-    SELECT article_id, title, namespace, rank,
-           ts_headline(%(tsearch_config)s, current_html, query,
-                       'MaxWords=100') AS headline
-      FROM
-      (
-        SELECT id, current_html,
-               ts_rank_cd('{0.1, 0.2, 0.4, 1.0}', tsvector, query, 0) AS rank,
-               the_query.query
-          FROM article, the_query
-         WHERE the_query.query @@ tsvector
-      ) AS foo
-      LEFT JOIN article_title ON id = article_id AND is_main_title
-      GROUP BY article_id, title, namespace, rank, headline;
+    SELECT id AS article_id,
+           ts_rank_cd('{0.1, 0.2, 0.4, 1.0}', tsvector, query, 0) AS rank,
+           ts_headline(current_html, query) AS headline
+      FROM article, the_query
+     WHERE tsvector @@ query;
 '''
+
+def full_text_search(query, *clauses, lang=None):
+    if lang is None:
+        lang = guess_language(query)
+
+    if lang is None:
+        config = "simple"
+    else:
+        config = lang.tsearch_configuration
+
+    cc = db.cursor()
+    cc.execute(fulltext_query_tmpl, { "query": query,
+                                      "tsearch_config": config })
+    db.execute(sql.select(
+        ("search_result.article_id", "title", "namespace", "rank", "headline",),
+        ("search_result",),
+        sql.left_join("article_title",
+                      "search_result.article_id = article_title.article_id"
+                      "      AND is_main_title"),
+        *clauses), cc=cc)
+
+    return [ model.FulltextEntry(cc.description, tpl)
+             for tpl in cc.fetchall() ]
+
 
 @bp.route("/")
 @bp.route("/<path:article_title>")
 @role_required("Reader")
 def article_view(article_title=None):
+    t = time.time()
+
     if article_title is None:
         article_title = ""
 
@@ -79,21 +98,6 @@ def article_view(article_title=None):
     if article_title == "":
         article_title = app.config["MAIN_ARTICLE"]
 
-    cc = db.cursor()
-    lang = guess_language(article_title)
-    if lang is None:
-        config = "simple"
-    else:
-        config = lang.tsearch_configuration
-    cc.execute(fulltext_query_tmpl, { "query": article_title,
-                                      "tsearch_config": config })
-
-    def full_text_search(query):
-        cc.execute(query)
-        return [ model.FulltextEntry(cc.description, tpl)
-                 for tpl in cc.fetchall() ]
-
-
     result = model.Article.id_by_title(article_title)
     if result is None or "search" in request.args:
         # No article found with that title. Present a search result only.
@@ -101,16 +105,13 @@ def article_view(article_title=None):
         title = markup.Title.parse(article_title)
         if title.namespace:
             query_namespace = title.namespace
-            where = cc.mogrify("WHERE namespace = %s",
-                               ( query_namespace, )).decode("utf-8")
+            where = sql.where("namespace = ", sql.string_literal(query_namespace))
         else:
-            where = ""
+            where = None
             query_namespace = ""
 
-        search_result = full_text_search(f"SELECT title, namespace, headline"
-                                         f"  FROM search_result "
-                                         f"  {where}"
-                                         f" ORDER BY rank DESC")
+        search_result = full_text_search(article_title,
+                                         where, sql.orderby("rank DESC"))
         if result:
             regular_result = model.Article.select_by_primary_key(result[0])
         else:
@@ -172,20 +173,12 @@ def article_view(article_title=None):
             sql.orderby("main_title, namespace")))
 
         if len(linking_here) == 0:
-            where = ""
+            where = None
         else:
             ids = [str(article.article_id) for article in linking_here]
             ids.append(str(article.id))
-
-            where = " WHERE article_id NOT IN (%s)" % ",".join(ids)
-
-        search_result = full_text_search(f"SELECT title, namespace, headline"
-                                         f"  FROM search_result "
-                                         f"  {where}"
-                                         f" ORDER BY rank DESC"
-                                         f" LIMIT 10")
-        full_text_count, = db.query_one(f"SELECT COUNT(*) FROM search_result "
-                                        f" {where}")
+            where = sql.where(
+                "search_result.article_id NOT IN (%s)" % ",".join(ids))
 
         return template(article=main_article,
                         included=included,
@@ -194,6 +187,23 @@ def article_view(article_title=None):
                         link_info=link_info,
                         file_info_json=file_info_json,
                         title_to_id_js=title_to_id_js,
-                        query=article_title,
-                        search_result=search_result,
-                        full_text_count=full_text_count)
+                        query=article_title)
+
+ids_re = re.compile(r"(\d+,?)+")
+@bp.route("/article_fulltext_search")
+@role_required("Reader")
+@gets_parameters_from_request
+def article_fulltext_search(query, lang, ids):
+    template = app.skin.load_template("article_fulltext_search_result.pt")
+
+    if ids:
+        if ids_re.match(ids) is None:
+            raise ValueError(ids)
+        where = sql.where("search_result.article_id IN (%s)" % ids)
+    else:
+        where = None
+
+    result = full_text_search(query, where, lang=get_languages().by_iso(lang))
+    count = db.count("search_result", where)
+
+    return template(search_result=result, full_text_count=count, query=query)
