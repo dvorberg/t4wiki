@@ -33,6 +33,10 @@
           <small class="text-body-secondary"
                  tal:condition="article.namespace"
                  tal:content="string:(${article.namespace})" />
+
+          <code class="bibtex-key"
+                tal:condition="article.bibtex_key"
+                tal:content="article.bibtex_key" />
         </h1>
       </div>
       <section class="col-lg-8" tal:condition="article">
@@ -81,7 +85,6 @@
                 </small>
               </a>
               <span>${article.teaser}</span>
-              <span>${article.elipsis}</span>
             </li>
           </ul>
         </section>
@@ -113,7 +116,7 @@
         </p>
         <p tal:condition="not:regular_result">
           Create article 
-          <a tal:attributes="href string:/articles/title_form.cgi?fulltitle=${query}"
+          <a tal:attributes="href string:/articles/title_form.cgi?full_title=${query}"
              class="text-danger">
             ${query}</a>!
         </p>
