@@ -22,7 +22,11 @@ CREATE VIEW article_for_redo AS
       FROM article
  LEFT JOIN article_title ON article_id = id AND is_main_title;
            
-
+DROP VIEW IF EXISTS article_for_recent_changes_list CASCADE;
+CREATE VIEW article_for_recent_changes_list AS
+    SELECT id, title AS main_title, namespace, bibtex_key, teaser, mtime
+      FROM article
+      LEFT JOIN article_title ON article_id = id and is_main_title;
 
 DROP VIEW IF EXISTS article_namespace CASCADE;
 CREATE VIEW article_namespace AS
