@@ -42,7 +42,7 @@ class Article(dbobject, has_title_and_namespace):
                                      ArticleTitle.title_where(title), ))
 
     def form_url(self, form):
-        return url_for(f"articles.{form}_form") + f"?id={self.id}"
+        return f"{get_site_url()}/articles/{form}_form.cgi?id={self.id}"
 
     @property
     def href(self):
