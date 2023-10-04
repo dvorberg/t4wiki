@@ -5,6 +5,23 @@
       xmlns:i18n="http://xml.zope.org/namespaces/i18n"
       lang="en">
 
+  <metal:block metal:define-macro="syntax-highlighting">
+    <link rel="stylesheet" type="text/css"
+          tal:attributes="href skin.href('article_forms/prism/prism.css')" />
+    <link rel="stylesheet" type="text/css"
+          tal:attributes="href skin.href('article_forms/syntax_highlighting.scss')" />
+    
+    <script type="module">
+      import { init_editor } from "syntax_highlighting";
+
+      document.addEventListener("DOMContentLoaded", function(event) {
+          document.querySelectorAll('.source-editor').forEach(node => {
+              init_editor(node);
+          });
+      });         
+    </script>
+  </metal:block>
+  
   <metal:block metal:define-macro="h1" tal:define="article linkman.article">
     <div class="mb-3">
       <h1 tal:condition="not:article">

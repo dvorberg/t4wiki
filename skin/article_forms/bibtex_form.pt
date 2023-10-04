@@ -4,21 +4,22 @@
       xmlns:metal="http://xml.zope.org/namespaces/metal"
       xmlns:i18n="http://xml.zope.org/namespaces/i18n"
       metal:use-macro="skin.main_template.macros.master"
-      lang="en">
+      lang="en"
+      tal:define="article linkman.article;
+                      formhead_template
+                          skin.load_template('article_forms/formhead.pt')">
   <head>
     <metal:block metal:fill-slot="title">
       <tal:block tal:replace="linkman.article.full_title" />
     </metal:block>
     
     <metal:block metal:fill-slot="head_slot">
-      
+      <metal:block
+          metal:use-macro="formhead_template.macros.syntax_highlighting" />
     </metal:block>
   </head>
   <body>
-    <main role="main" class="t4wiki" metal:fill-slot="main"
-          tal:define="article linkman.article;
-                      formhead_template
-                          skin.load_template('article_forms/formhead.pt')">
+    <main role="main" class="t4wiki" metal:fill-slot="main">
 
       <h1 metal:use-macro="formhead_template.macros.h1" />
       
@@ -39,11 +40,15 @@
 
           <div tal:replace="structure fb.html" />
           
-          <textarea id="bibtex-source" rows="20"
-                    tal:attributes="class string:font-monospace form-control ${fb.cls}"
-                    tal:content="value">
-          </textarea>
-
+          <div class="source-editor">
+            <pre class="form-control"><code class="source-viewer stretch-to-bottom language-bibtex"></code></pre>
+            
+            <textarea id="bibtex-source" rows="20"
+                      tal:attributes="class string:font-monospace form-control ${fb.cls}"
+                      tal:content="value">
+            </textarea>
+          </div>
+          
           <div class="form-text">
 
           </div>            
