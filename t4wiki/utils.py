@@ -171,13 +171,16 @@ class FormParamHandler(object):
 
 
 class OrderByOption(object):
-    def __init__(self, expression, label):
+    def __init__(self, expression, label, id=None):
         """
         `expression` may be a string or an sql.orderby object.
         """
         self.expression = expression
         self.label = label
-        self.id = title_to_id(label)
+        if id is None:
+            self.id = title_to_id(label)
+        else:
+            self.id = id
 
     def __eq__(self, other):
         if type(other) == str:
@@ -211,9 +214,10 @@ class OrderByHandler(FormParamHandler):
 
         self.default = list(self.options)[0]
 
-        new_active = rget("orderby")
-        if new_active and new_active in self.options:
-            session[self.cookie_name] = new_active
+        if request.method == "POST":
+            new_active = rget("orderby")
+            if new_active and new_active in self.options:
+                session[self.cookie_name] = new_active
 
     @property
     def active(self):
@@ -232,29 +236,7 @@ class OrderByHandler(FormParamHandler):
     def sql_clause(self):
         return self.active.sql_clause()
 
-    def link_widget(self):
-        buttons = xsc.Frag()
-
-        active = self.active
-        for option in self.options.values():
-            if option == active:
-                color = "btn-success"
-            else:
-                color = "btn-secondary"
-
-            a = html.a(option.label,
-                       href=self.href_to(orderby=option.id,
-                                         page=0),
-                       class_="btn " + color)
-            a.attrs["data-id"] = option.id
-            buttons.append(a)
-
-        ret = html.div(buttons, class_="orderby-widget btn-group")
-        return ret
-
-    widget = link_widget
-
-    def input_widget(self):
+    def widget(self):
         buttons = xsc.Frag()
 
         active = self.active
@@ -267,16 +249,15 @@ class OrderByHandler(FormParamHandler):
             button = html.button(
                 option.label,
                 type="button",
-                onclick=f"submit_orderby(this, '{option.id}')",
-                class_="btn " + color)
+                class_="orderby-button btn " + color,
+                **{"data-option-id" :option.id})
             buttons.append(button)
 
-        input = html.input(name="orderby",
-                           type="text",
+        input = html.input(name="orderby", type="text",
                            style="display: none; visibility: hidden")
 
-        ret = html.div(buttons, input, class_="orderby-widget btn-group")
-        return ret
+        return xsc.Frag(html.div(buttons, class_="orderby-widget btn-group"),
+                        input)
 
 
     def display_class(self, id):
@@ -351,6 +332,10 @@ class PaginationHandler(FormParamHandler):
         self.count = count
 
     @property
+    def needed(self):
+        return self.count > self.pagesize
+
+    @property
     def page(self):
         ret = int(rget("page", 0))
         if ret > int(self.count / self.pagesize):
@@ -362,10 +347,10 @@ class PaginationHandler(FormParamHandler):
                  sql.limit(self.pagesize), )
 
     def widget(self, extra_class="", **kw):
-        return pagination(self.count, self.pagesize,
-                          baseurl=self.base_url, current_page=self.page,
-                          extra_class="", **kw)
-
+        if self.needed:
+            return pagination(self.count, self.pagesize,
+                              baseurl=self.base_url, current_page=self.page,
+                              extra_class="", **kw)
 
 class ViewsHandler(FormParamHandler):
     def __init__(self, possible_views, cookie_name,
