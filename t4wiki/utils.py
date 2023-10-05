@@ -45,7 +45,7 @@ def get_www_url(path, **kw):
     else:
         params = ""
 
-    return app.config["SITE_URL"] + params
+    return app.config["APPLICATION_ROOT"] + params
 
 def get_site_url(**kw):
     return get_www_url("/", **kw)
