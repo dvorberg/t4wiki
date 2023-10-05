@@ -1,7 +1,7 @@
-import re, string, datetime, io, json, time
+import sys, os, re, string, datetime, io, json, time
 from typing import List
 
-from flask import (current_app as app, Blueprint,
+from flask import (current_app as app,
                    g, request, session, abort, redirect, make_response)
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.exceptions import Unauthorized
@@ -12,17 +12,49 @@ from ll.xist.ns import html
 from t4 import sql
 from t4.typography import normalize_whitespace
 
+from iridophore.flask import SkinnedBlueprint as Blueprint
 from tinymarkup.utils import html_start_tag
 
-from .ptutils import test
 from .context import get_languages
-from .utils import guess_language, gets_parameters_from_request
-from .authentication import login_required, role_required
+from .utils import guess_language, gets_parameters_from_request, rget
+from .authentication import login_required, role_required, get_user
 from . import markup
 from . import model
 from . import db
+from . import ptutils
+
+
+from werkzeug import serving
+
+quoted_question_mark_re = re.compile("%3[fF]")
+from urllib.parse import unquote
+def my_unquote(s):
+    ret = unquote(s)
+    ret = quoted_question_mark_re.sub("?", ret)
+    return ret
+serving.unquote = my_unquote
+
+
+class Blueprint(Blueprint):
+    def register(self, app, options):
+        super().register(app, options)
+
+        app.debug_sql = app.debug and (os.getenv("DEBUG_SQL") is not None)
+        db.init_app(app)
 
 bp = Blueprint("wiki", __name__, url_prefix="/wiki")
+
+bp.skin.add_mjs_import("t4wiki", "t4wiki.mjs")
+bp.skin.add_mjs_import("articles", "articles.mjs")
+bp.skin.add_mjs_import("searchbar", "searchbar.mjs")
+
+@bp.skin.template_globals
+def template_globals():
+    return { "test": ptutils.test,
+             "ptutils": ptutils,
+             "user": get_user(),
+             "rget": rget,
+            }
 
 @bp.route("/t4wiki_languages.css")
 @login_required
