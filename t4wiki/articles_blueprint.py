@@ -1,5 +1,5 @@
-import subprocess, urllib.parse, mimetypes, unicodedata
 import os.path as op, re, string, datetime, io, json, time, tomllib, pathlib
+import sys, subprocess, urllib.parse, mimetypes, unicodedata
 from PIL import Image
 
 from flask import (current_app as app, url_for,
@@ -23,7 +23,8 @@ from tinymarkup.utils import html_start_tag
 
 from .ptutils import test
 from .utils import (gets_parameters_from_request, guess_language, get_languages,
-                    get_site_url)
+                    get_site_url, rget,
+                    OrderByHandler, PaginationHandler, FilterFormHandler)
 from .form_feedback import FormFeedback, NullFeedback
 from . import model
 from .db import insert_from_dict, commit, query_one, execute, cursor
@@ -32,8 +33,8 @@ from .markup import (Title, tools_by_format, compile_article,
                      normalize_source, )
 from .authentication import login_required, role_required
 
-
 bp = Blueprint("articles", __name__, url_prefix="/articles")
+
 bp.skin.add_mjs_import("files_form", "article_forms/files_form.mjs")
 bp.skin.add_mjs_import("codejar", "article_forms/codejar/codejar.mjs")
 bp.skin.add_mjs_import("cursor", "article_forms/codejar/cursor.mjs")
@@ -533,20 +534,65 @@ def download_upload(id:int):
 
     return response
 
-@bp.route("/recent_changes.cgi")
+@bp.route("/all.cgi", methods=("GET", "POST"))
 @role_required("Writer")
 @gets_parameters_from_request
-def recent_changes():
-    template = app.skin.load_template("recent_changes.pt")
+def all():
+    template = app.skin.load_template("article_list.pt")
 
-    articles = model.ArticleForRecentChangesList.select(
-        sql.orderby("mtime DESC"), sql.limit(20))
+    def rget_empty_as_none(key, default):
+        ret = rget(key, default=None)
+        if ret:
+            return ret
+        else:
+            return None
 
-    return template(articles=articles)
+    orderby = OrderByHandler(
+        [ ("main_title, namespace", "Title",),
+          ("mtime DESC", "Modification time", "mtime",),
+         ], "articles_orderby")
+
+    filter = FilterFormHandler("article_filter",
+                               ( "namespace", rget_empty_as_none, None, ))
+
+    if request.method == "GET":
+        namespace = rget("namespace")
+        if namespace:
+            filter.namespace = namespace
+
+
+    if filter.namespace is None:
+        where = sql.where("1=1")
+    else:
+        where = sql.where("namespace = ", sql.string_literal(filter.namespace))
+
+    count = model.ArticleForList.count(where)
+
+    pagesize = int(count/19)
+    if pagesize < 50:
+        pagesize = 50
+
+    print("pagesize =", repr(pagesize))
+
+    pagination = PaginationHandler(pagesize=pagesize, count=count)
+    articles = model.ArticleForList.select(
+        where, orderby.sql_clause(), *pagination.sql_clauses())
+
+    if orderby.active.id == "mtime":
+        title = "Recent Changes"
+    else:
+        title = "Articles"
+
+        if filter.namespace:
+            title = f"{title} ({filter.namespace})"
+
+    return template(title=title, articles=articles,
+                    orderby=orderby, filter=filter, pagination=pagination)
 
 def redo_all():
     for article in model.ArticleForRedo.select(sql.orderby("full_title")):
         print(article.full_title, end="")
+        sys.stdout.flush()
         user_info = tomllib.loads(article.user_info_source)
 
         titles = [ Title(get_languages().by_iso(d["lang"]),
@@ -583,5 +629,5 @@ def redo_all():
                           bibtex=sql.jsonb_literal(bibtex_entry),
                           bibtex_key=bibtex_key)
         print()
-
+        sys.stdout.flush()
     commit()
