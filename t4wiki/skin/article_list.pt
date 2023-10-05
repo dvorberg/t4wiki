@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      metal:use-macro="skin.main_template.macros.master"
+      lang="en">
+  <head>
+    <metal:block metal:fill-slot="title">
+      ${title}      
+    </metal:block>
+    
+    <metal:block metal:fill-slot="head_slot">
+      <script>
+        document.addEventListener("DOMContentLoaded", function(event) {
+          document.querySelectorAll(
+                              "button.namespace-button").forEach(button => {
+              console.log(button);
+              button.addEventListener("click", event => {
+                  let form = button.form,
+                      input = form.querySelector("input[name=namespace]");
+                  input.value = button.getAttribute("data-namespace");
+                  form.submit();			
+              });
+          });        
+        });        
+      </script>
+    </metal:block>
+  </head>
+  <body>
+    <main role="main" class="row t4wiki" metal:fill-slot="main">
+      <h1>
+        ${title}
+      </h1>
+      
+      <section class="col recent-changes">
+        <form action="all.cgi" method="post" class="container my-2">
+          <div class="row pb-2">
+            <div class="col-1 ps-0 pt-1">
+              Order by
+            </div>
+            <div class="col" tal:content="structure orderby.widget()" />
+          </div>
+          <div class="row pb-2">
+            <div class="col-1 ps-0 pt-1">
+              Namespace
+            </div>
+            <div class="col">
+              <button class="namespace-button btn 
+                             btn-${test(filter.namespace is None, 'success', 'secondary')}"
+                      type="button" data-namespace="">
+                All
+              </button>
+
+              <div class="btn-group">
+                <tal:block tal:repeat="namespace namespaces">
+                  <button class="namespace-button btn 
+                                 btn-${test(namespace == filter.namespace, 'success', 'secondary')}"
+                          type="button" data-namespace="${namespace}">
+                    ${namespace}
+                  </button>
+                </tal:block>
+              </div>
+            </div>
+
+            <input name="namespace"
+                   style="display: none; visibility: hidden"
+                   tal:attributes="value filter.namespace" />
+          </div>
+          <div class="row" tal:condition="pagination.needed">
+            <div class="col-1 ps-0 pt-1">
+              Page
+            </div>
+            <div class="col"
+                 tal:content="structure pagination.widget()" />
+          </div>
+        </form>
+        
+        <ul>
+          <li tal:repeat="article articles">
+            <a class="title" href="${article.href}">
+              ${article.main_title}
+              <small tal:condition="article.namespace"
+                    class="text-body-secondary">
+                (${article.namespace})
+              </small>
+              <code class="bibtex-key"
+                    tal:condition="article.bibtex_key"
+                    tal:content="article.bibtex_key" />
+            </a>
+            <div class="info">
+              <span class="date">
+                Last modified:
+                <span tal:replace="ptutils.pretty_date(article.mtime, with_time=True)"
+                      class="date" />
+              </span> |
+              <a href="${article.form_url('title')}">Title and Format</a>
+              ·
+              <a href="${article.form_url('source')}"> Source </a>
+              ·
+              <a href="${article.form_url('bibtex')}">
+                BibT<span style="position:relative; top:.2em">E</span>X
+              </a>
+              ·
+              <a href="${article.form_url('user_info')}">User info</a>
+              ·
+              <a href="${article.form_url('files')}">Files</a>                  
+            </div>
+            <div class="teaser">
+              <span tal:replace="structure article.teaser" />
+              <a href="${article.href}">more</a>
+            </div>
+          </li>
+        </ul>        
+      </section>
+    </main>    
+  </body>
+</html>
+  
