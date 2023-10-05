@@ -1,0 +1,92 @@
+.invalid-feedback
+{
+    display: block ! important;
+    margin-bottom: 0.5em;
+    font-size: 100%;
+}
+
+.t4wiki
+{
+    code.bibtex-key
+    {
+        
+    }
+
+    h1 code.bibtex-key
+    {
+        font-size: 1rem;
+    }
+    
+    article
+    {
+        img.missing
+        {
+            width: 100px;
+            height: 100px;
+            border: var(--bs-red) 1px solid;
+        }
+        
+        img.float-end
+        {
+            margin: 0 0 0.5em 0.5em;
+        }
+        
+        figure
+        {
+            img
+            {
+                max-width: 100%;
+            }
+        }
+    }
+
+    section.recent-changes
+    {
+        ul
+        {
+            margin-left: 0;
+            padding-left: 0;
+        }
+        
+        li
+        {
+            list-style: none;
+            margin-left: 0;
+            padding-left: 0;
+            margin-bottom: 1em;
+        }
+        
+        a.title
+        {
+            text-decoration: none;
+            color: inherit;
+            font-weight: bold;
+            display: block;
+            font-size: 1.2em;
+
+            code
+            {
+                color: var(--bs-code-color);
+                font-size: 1rem;
+            }
+        }
+
+        div.info
+        {            
+            span.date
+            {
+                color: var(--bs-red);
+            }
+
+            a
+            {
+                text-decoration: none;
+            }
+        }
+    }
+}
+
+textarea.font-monospace
+{
+    font-size: 90%;
+}
