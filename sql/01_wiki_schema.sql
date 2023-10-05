@@ -13,16 +13,16 @@ CREATE TEXT SEARCH DICTIONARY german_hunspell (
 ALTER TEXT SEARCH CONFIGURATION english
     ALTER MAPPING FOR asciiword, asciihword, hword_asciipart,
                       word, hword, hword_part
-    WITH english_hunspell, pg_catalog.english_stem; -- pg_catalog.simple;
+    WITH english_hunspell, pg_catalog.simple; -- pg_catalog.simple;
 
 
 ALTER TEXT SEARCH CONFIGURATION  german
     ALTER MAPPING FOR asciiword, asciihword, hword_asciipart,
                       word, hword, hword_part
-    WITH german_hunspell, pg_catalog.german_stem; -- pg_catalog.simple;
+    WITH german_hunspell, pg_catalog.simple; -- pg_catalog.simple;
 
 
-set search_path = public;
+Set search_path = public;
 CREATE EXTENSION IF NOT EXISTS citext;
 
 DROP SCHEMA IF EXISTS wiki CASCADE;
