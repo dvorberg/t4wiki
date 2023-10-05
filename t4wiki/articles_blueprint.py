@@ -2,7 +2,7 @@ import subprocess, urllib.parse, mimetypes, unicodedata
 import os.path as op, re, string, datetime, io, json, time, tomllib, pathlib
 from PIL import Image
 
-from flask import (current_app as app, Blueprint, url_for,
+from flask import (current_app as app, url_for,
                    g, request, session, abort, redirect, make_response)
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.exceptions import Unauthorized
@@ -15,6 +15,8 @@ import bibtexparser.bparser
 from t4 import sql
 from t4.typography import normalize_whitespace
 from t4.passwords import slug
+
+from iridophore.flask import SkinnedBlueprint as Blueprint
 
 from tinymarkup.exceptions import MarkupError
 from tinymarkup.utils import html_start_tag
@@ -30,7 +32,14 @@ from .markup import (Title, tools_by_format, compile_article,
                      normalize_source, )
 from .authentication import login_required, role_required
 
+
 bp = Blueprint("articles", __name__, url_prefix="/articles")
+bp.skin.add_mjs_import("files_form", "article_forms/files_form.mjs")
+bp.skin.add_mjs_import("codejar", "article_forms/codejar/codejar.mjs")
+bp.skin.add_mjs_import("cursor", "article_forms/codejar/cursor.mjs")
+bp.skin.add_mjs_import("prismjs", "article_forms/prism/prism.mjs")
+bp.skin.add_mjs_import("syntax_highlighting",
+                       "article_forms/syntax_highlighting.mjs")
 
 class LinkMan(object):
     def __init__(self, active_form, article):
