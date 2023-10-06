@@ -27,9 +27,22 @@ def rollup_sql(*query):
     return sql.rollup(sql_backend, *query)
 
 def get_dbconn():
-    if "dbconn" not in g:
-        g.dbconn = psycopg2.connect(**app.config["DATASOURCE"])
+    #if "dbconn" not in g:
+    #    g.dbconn = psycopg2.connect(**app.config["DATASOURCE"])
     return g.dbconn
+
+# def close_dbconn(e=None):
+#     dbconn = g.pop("dbconn", None)
+#     if dbconn is not None:
+#         dbconn.rollback()
+#         dbconn.close()
+
+# def init_app(app):
+#     app.teardown_appcontext(close_dbconn)
+
+#     @app.teardown_request
+#     def teardown_request(exception):
+#         rollback()
 
 class CursorDebugWrapper(object):
     def __init__(self, cursor):
@@ -66,12 +79,6 @@ def commit():
 def rollback():
     get_dbconn().rollback()
 
-def close_dbconn(e=None):
-    dbconn = g.pop("dbconn", None)
-    if dbconn is not None:
-        dbconn.rollback()
-        dbconn.close()
-
 def insert_from_dict(relation, d, retrieve_id=True, sequence_name=None):
     if sequence_name is not None:
         retrieve_id = True
@@ -95,13 +102,6 @@ def insert_from_dict(relation, d, retrieve_id=True, sequence_name=None):
             return id
         else:
             return None
-
-def init_app(app):
-    app.teardown_appcontext(close_dbconn)
-
-    @app.teardown_request
-    def teardown_request(exception):
-        rollback()
 
 class SQLRepresentation(type):
     def __new__(cls, name, bases, dct):

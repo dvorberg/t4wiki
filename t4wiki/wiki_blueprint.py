@@ -40,7 +40,7 @@ class Blueprint(Blueprint):
         super().register(app, options)
 
         app.debug_sql = app.debug and (os.getenv("DEBUG_SQL") is not None)
-        db.init_app(app)
+        #db.init_app(app)
 
 bp = Blueprint("wiki", __name__, url_prefix="/wiki")
 
@@ -232,7 +232,7 @@ def article_fulltext_search(query, lang, ids):
     if ids:
         if ids_re.match(ids) is None:
             raise ValueError(ids)
-        where = sql.where("search_result.article_id IN (%s)" % ids)
+        where = sql.where("search_result.article_id NOT IN (%s)" % ids)
     else:
         where = None
 
