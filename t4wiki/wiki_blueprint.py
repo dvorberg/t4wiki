@@ -128,7 +128,7 @@ def article_view(article_title=None):
     article_title = normalize_whitespace(article_title)
 
     if article_title == "":
-        article_title = app.config["MAIN_ARTICLE"]
+        article_title = app.config["PORTAL_ARTICLES"][0]
 
     result = model.Article.id_by_title(article_title)
     if result is None or "search" in request.args:
