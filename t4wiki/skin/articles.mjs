@@ -1,4 +1,4 @@
-import { title2path } from "t4wiki";
+import { title2path, normalize_whitespace } from "t4wiki";
 
 class ArticleManager
 {
@@ -108,18 +108,47 @@ class ArticleManager
             }
         }
 
-        
+		// Go through the headlines and set their name= attribute to their
+		// text contents. 
+		let heading_ids = Array();
+		this.article_section.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach(
+			function(h) {
+				if ( ! h.hasAttribute("id"))
+				{
+					const id = normalize_whitespace(h.textContent);
+					
+					if (heading_ids.indexOf(id) == -1)
+					{
+						h.setAttribute("id", id);
+						heading_ids.push(id);
+					}
+				}
+			});
+
+
         // Go through the links and set their targets correctly.
         // Also set link classes.
         this.article_section.querySelectorAll("a.t4wiki-link").forEach(
             function(a) {
                 const href = decodeURI(a.getAttribute("href")),
-					  key = href.toLowerCase(),
+					  parts = href.split("#"),
+					  key = parts[0].toLowerCase(), 
 					  fulltitle = self.link_info[key];
+
+				var anchor;
+				if (parts.length == 2)
+				{
+					anchor = "#" + parts[1];
+				}
+				else
+				{
+					anchor = "";
+				}
 
                 if (fulltitle)
                 {
-                    a.setAttribute("href", "/" + title2path(fulltitle));
+                    a.setAttribute(
+						"href", "/" + title2path(fulltitle) + anchor);
                     a.classList.add("available");
                 }
                 else
@@ -127,6 +156,14 @@ class ArticleManager
                     a.setAttribute("href", "/" + href);
                     a.classList.add("missing");
                 }
+
+				// Links that point to an anchor and have a href
+				// identical with their text content get the # removed
+				// and a pair of () added.
+				if (a.textContent == href && anchor != "")
+				{
+					a.textContent = `${parts[0]} (${parts[1]})`;
+				}
             });
     }
 

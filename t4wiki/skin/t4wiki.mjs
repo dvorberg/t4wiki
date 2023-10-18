@@ -3,6 +3,12 @@ export function title2path(title)
 	return title.replace("?", "%3f");
 }
 
+const white_space_re = /\s+/;
+export function normalize_whitespace(s)
+{
+	return s.trim().replace(white_space_re, " ");
+}
+
 document.addEventListener("DOMContentLoaded", function(event) {
 	// Form tools
     function id_to_name(element)
