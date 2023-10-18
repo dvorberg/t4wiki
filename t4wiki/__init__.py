@@ -20,3 +20,6 @@ xsc.Node.__html__ = xsc.Node.string
 #    return self.string()
 #xsc.Node.__html__ = xsc__html__
 #
+
+from icecream import install
+install()
