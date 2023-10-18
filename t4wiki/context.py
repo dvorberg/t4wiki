@@ -14,5 +14,9 @@ class Context(Context):
         self.macro_info = {}
 
     def html_link_element(self, target, text):
-        self.article_links.add(target)
+        # Remove the anchor when adding the linked document
+        # to the internal list.
+        document_name = target.split("#", 1)[0]
+        self.article_links.add(document_name)
+
         return super().html_link_element(target, text)
