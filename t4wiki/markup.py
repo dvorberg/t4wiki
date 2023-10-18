@@ -1,5 +1,7 @@
-import io, re, unicodedata
+import io, re, unicodedata, importlib
 from typing import NamedTuple, List
+
+from flask import current_app as app
 
 from t4 import sql
 from t4.typography import normalize_whitespace
@@ -138,6 +140,12 @@ def compile_article(titles, source, format, root_language, user_info):
     """
     Parser, HTMLCompiler, TSearchCompiler, macro_library = tools_by_format(
         format)
+
+    context_class_name = app.config.get("T4WIKI_CONTEXT_CLASS", None)
+    if context_class_name is not None:
+        module_name, class_name = context_class_name.rsplit(".", 1)
+        module = importlib.import_module(module_name)
+        Context = getattr(module, class_name)
 
     context = Context(macro_library, user_info)
     context.root_language = root_language
