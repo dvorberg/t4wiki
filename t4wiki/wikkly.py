@@ -149,7 +149,3 @@ class poem(Macro):
 
 macro_library = MacroLibrary()
 macro_library.register_module(globals())
-
-class Context(Context):
-    def __init__(self):
-        super().__init__(macro_library)
