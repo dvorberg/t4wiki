@@ -76,11 +76,15 @@ def languages_css():
     return response
 
 
-fulltext_query_tmpl = '''\
+create_query_view = '''\
 set search_path = wiki, public;
 
 CREATE TEMPORARY VIEW the_query AS
-    SELECT websearch_to_tsquery(%(tsearch_config)s, %(query)s) AS query;
+    SELECT {} AS query;
+'''
+
+create_result_view = '''\
+set search_path = wiki, public;
 
 CREATE TEMPORARY VIEW search_result AS
     SELECT id AS article_id,
@@ -100,14 +104,40 @@ def full_text_search(query, *clauses, lang=None):
         config = lang.tsearch_configuration
 
     cc = db.cursor()
-    cc.execute(fulltext_query_tmpl, { "query": query,
-                                      "tsearch_config": config })
+    command = create_query_view.format(
+        "websearch_to_tsquery(%(tsearch_config)s, %(query)s)")
+    cc.execute(command, { "query": query, "tsearch_config": config })
+
+    return run_query(cc, *clauses)
+
+
+def title_search(article_id, *clauses):
+    titles = model.ArticleTitle.select(
+        sql.where("article_id = %i" % article_id))
+
+    parts = []
+    params = []
+    for title in titles:
+        parts.append('websearch_to_tsquery(%s, %s)')
+        params.append(title.language_object.tsearch_configuration)
+        params.append('"' + title.title.replace('"', ' ') + '"')
+
+    cc = db.cursor()
+    command = create_query_view.format(" || ".join(parts))
+    cc.execute(command, params)
+
+    return run_query(cc, *clauses)
+
+def run_query(cc, *clauses):
+    cc.execute(create_result_view)
+
     db.execute(sql.select(
         ("search_result.article_id", "title", "namespace", "rank", "headline",),
         ("search_result",),
         sql.left_join("article_title",
                       "search_result.article_id = article_title.article_id"
                       "      AND is_main_title"),
+        sql.orderby("rank DESC"),
         *clauses), cc=cc)
 
     return [ model.FulltextEntry(cc.description, tpl)
@@ -226,17 +256,17 @@ ids_re = re.compile(r"(\d+,?)+")
 @bp.route("/article_fulltext_search")
 @role_required("Reader")
 @gets_parameters_from_request
-def article_fulltext_search(query, lang, ids):
+def article_fulltext_search(article_id:int, linking_here):
     template = app.skin.load_template("article_fulltext_search_result.pt")
 
-    if ids:
-        if ids_re.match(ids) is None:
-            raise ValueError(ids)
-        where = sql.where("search_result.article_id NOT IN (%s)" % ids)
-    else:
-        where = None
+    ignore_ids = [ article_id, ]
+    if linking_here != "":
+        ignore_ids += [ int(id) for id in linking_here.split(",") ]
 
-    result = full_text_search(query, where, lang=get_languages().by_iso(lang))
+    where = sql.where("search_result.article_id NOT IN (%s)" % (
+        ",".join([str(i) for i in ignore_ids]),))
+
+    result = title_search(article_id, where, sql.limit(100))
     count = db.count("search_result", where)
 
-    return template(search_result=result, full_text_count=count, query=query)
+    return template(search_result=result, full_text_count=count)
