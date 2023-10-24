@@ -5,6 +5,8 @@ from t4 import sql
 
 from .utils import get_site_url, title2path
 from .db import dbobject, query_one, cursor, execute_with_template, execute
+from .context import get_languages
+from . import markup
 
 class has_title_and_namespace:
     @property
@@ -132,6 +134,10 @@ class ArticleTitle(dbobject, has_title_and_namespace):
     @classmethod
     def select_by_full_title(ArticleTitle, title):
         return ArticleTitle.select_one(ArticleTitle.title_where(title))
+
+    @property
+    def language_object(self):
+        return get_languages().by_iso(self.language)
 
 class FulltextEntry(dbobject, has_title_and_namespace):
     pass
