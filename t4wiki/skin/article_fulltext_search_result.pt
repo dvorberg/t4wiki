@@ -1,12 +1,14 @@
 <tal:block tal:condition="full_text_count == 0">
-  <p>
-    The full text search yielded no additional entries.
-  </p>  
+  <tal:block tal:replace="nothing">
+    <p>
+      The full text search yielded no additional entries.
+    </p>
+  </tal:block>
 </tal:block>
 <tal:block tal:condition="full_text_count != 0">
-  <h4>Full text search for “${query}”</h4>
+  <h4>Full text search for the article’s title(s) </h4>
   <p>
-    The full text search yielded ${len(search_result)} additional entries:
+    The full text search yielded ${len(search_result)} entries:
   </p>
 
   <ol>
@@ -19,17 +21,16 @@
         </small>
       </div>
       …<span class="headline"
-      data-article-id="${entry.article_id}"
-      tal:content="structure entry.headline">
+             data-article-id="${entry.article_id}"
+             tal:content="structure entry.headline">
       </span>…
       <a class="stretched-link"
          href="${entry.href}">more</a>
     </li>
   </ol>
 
-  <p tal:condition="full_text_count &gt; 10">
-    <a tal:attributes="href string:${query}?search">
-      ${full_text_count-10} more results →
-    </a>
-  </p>
+
+  <p tal:condition="full_text_count &gt; 100">
+    Search result limited to 100 entries shown. 
+  </p>  
 </tal:block>

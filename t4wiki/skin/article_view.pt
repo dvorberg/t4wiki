@@ -78,12 +78,9 @@
             <li tal:repeat="article linking_here"
                 data-article-id="${article.article_id}">
               <a tal:attributes="href article.href">
-                ${article.main_title}
-                <small tal:condition="article.namespace"
-                       class="text-body-secondary">
-                  (${article.namespace})
-                </small>
-              </a>
+                ${article.main_title}<small tal:condition="article.namespace"
+                                            class="text-body-secondary">
+                                       (${article.namespace})</small></a>
               <span>${article.teaser}</span>
             </li>
           </ul>
@@ -105,10 +102,9 @@
           Page available:
           <tal:block tal:define="article regular_result">
             <a tal:attributes="href article.href">
-              ${article.main_title}
-              <small tal:condition="article.namespace"
-                     class="text-body-secondary"
-                     tal:content="string:(${article.namespace})" /></a>
+              ${article.main_title}<small tal:condition="article.namespace"
+                                          class="text-body-secondary">
+                                          (${article.namespace})" /></small></a>
             <tal:block tal:condition="article.full_title != query">
               (Forwarded from “${query}”).
             </tal:block>

@@ -27,16 +27,18 @@ class ArticleManager
 		let ids = [];
 		document.querySelectorAll("section.linking-here li").forEach(li => {
 			ids.push(parseInt(li.getAttribute("data-article-id")));
-		});
+		});		
 		
 		const section = document.querySelector(
 			"aside.article-meta section.search-result");
 		this.search_result_section = section;
-		
+
+		const article = document.querySelector("article.main"),
+			  article_id = parseInt(article.getAttribute("data-article-id"));
+
 		let params = new URLSearchParams();
-		params.set("query", section.getAttribute("data-query"));
-		params.set("lang", section.getAttribute("data-lang"));
-		params.set("ids", ids.join(","));
+		params.set("article_id", article_id);
+		params.set("linking_here", ids.join(","));
 
 		const url = globalThis.site_url
 			  + "/article_fulltext_search?" + params.toString();
