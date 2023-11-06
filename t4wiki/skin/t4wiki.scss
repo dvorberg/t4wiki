@@ -84,6 +84,26 @@
             }
         }
     }
+
+    .t4wiki-toc
+    {
+        ul, li
+        {
+            list-style: none;
+        }
+
+        > ul
+        {
+            margin-left: 0;
+            padding-left: 0;
+        }
+
+        a
+        {
+            text-decoration: none;
+            color: var(--bs-info);
+        }
+    }
 }
 
 textarea.font-monospace
