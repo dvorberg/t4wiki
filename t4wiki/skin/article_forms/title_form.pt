@@ -52,10 +52,15 @@
             <div tal:replace="structure fb.html" />
             
             <div class="form-text">
-              The article’s main title. “Ignore Namespace” means information
-              enclosed in parentheses at the end of the title will not be
-              considered a namespace setting. This setting will also be
-              applied to all aliases. The title must be unique to this article.
+              The article’s main title. “Ignore Namespace” means
+              information enclosed in parentheses at the end of the
+              title will not be considered a namespace setting. This
+              setting will also be applied to all aliases. The title
+              must be unique to this article.  Articles that have a
+              namespace <i>and</i> a part in paranthesis will be
+              normalized to the format “Title (Info) (Namespace)“
+              which is equivalent to “Title (Info, Namespace)“. The
+              namespace part must not contain parantheses or commas.
             </div>            
           </div>
         </div>
@@ -96,6 +101,8 @@
           
           <div class="form-text">
             Each alias, like the main title, must be unique to this article.
+            Titles may be prefixed by language codes separated with a “:” as in
+            “en:Endlish Title (Namespace)“. 
           </div>            
         </div>
 
