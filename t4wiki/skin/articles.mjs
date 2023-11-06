@@ -1,5 +1,97 @@
 import { title2path, normalize_whitespace } from "t4wiki";
 
+class Heading
+{
+    // Return the # from an h# tag as an integer;
+    static h_element_level(h_element)
+    {
+        return parseInt(h_element.tagName.substr(1, 1));
+    }
+
+    constructor(parent, level, tag)
+    {
+        this.parent = parent;
+        this.level = level;
+        this.tag = tag;
+        
+        if (tag !== null)
+        {
+            this.caption = tag.innerHTML.replace(/<.*?>/g, "");
+        }
+        else
+        {
+            this.caption = "";
+        }
+        this.children = [];
+    }
+
+    // Append a heading for the h_element and return the newly inserted
+    // child. If h_element is null, append and return an empty entry.
+    // If the h_element’s level is more than one level apart from this
+    // one’s, fill in empty entries.
+    append(h_element)
+    {
+        if (h_element === null)
+        {
+            var kid = new Heading(this, this.level + 1, null);
+            this.children.push(kid);
+            return kid;
+        }
+        else
+        {
+            var level = Heading.h_element_level(h_element);
+            var here = this;
+            while(level > here.level + 1)
+            {
+                here = here.append(null);
+            }
+
+            var kid = new Heading(here, level, h_element);
+            here.children.push(kid);
+            return kid;
+        }
+    }
+
+    li()
+    {
+        var li = document.createElement("li"),
+            heading_index = 0;
+        
+        if (this.tag)
+        {
+            //heading_index++;
+            //var name = "toc" + heading_index;
+            //li.appendChild(document.createElement("a", {name: name}));
+
+            if (this.tag)
+            {
+                var name = this.tag.getAttribute("id");
+                var link = document.createElement("a");
+                link.setAttribute("href", "#" + name);
+                link.innerText = this.caption;
+                li.appendChild(link);
+            }
+        }
+            
+        if (this.children.length > 0)
+        {
+            li.appendChild(this.ul());
+        }
+            
+        return li;            
+    }
+
+    ul()
+    {
+        var ul = document.createElement("ul");
+        this.children.forEach(function(kid) {
+            ul.appendChild(kid.li());
+        });
+        return ul;
+    }
+}
+    
+
 class ArticleManager
 {
     constructor(id_by_title, info_by_id, link_info)
@@ -21,8 +113,16 @@ class ArticleManager
 
     on_dom_content_loaded(event)
     {
-        var self = this;
+        this.start_full_text_search();
+        this.deal_with_includes();
+        this.collect_footnotes();
+        queueMicrotask(this.make_headings_targets.bind(this));
+        queueMicrotask(this.process_links.bind(this));
+        queueMicrotask(this.construct_toc_maybe.bind(this));
+    }
 
+    start_full_text_search()
+    {
 		// First order of business: Start the full text query on the server.
 		let ids = [];
 		document.querySelectorAll("section.linking-here li").forEach(li => {
@@ -44,7 +144,20 @@ class ArticleManager
 			  + "/article_fulltext_search?" + params.toString();
 		
 		fetch(url).then(this.on_search_result_loaded.bind(this));
+    }
 
+    on_search_result_loaded(response)
+	{
+		const self = this;
+		response.text().then(function(text) {
+			self.search_result_section.innerHTML = text;
+		});
+	}
+
+
+    deal_with_includes()
+    {
+        const self = this;
         
         // Deal with includes.
         this.main_article = document.querySelector("article.main");
@@ -77,7 +190,10 @@ class ArticleManager
                     self.id_by_title[title] = null;
                 }
             });
+    }
 
+    collect_footnotes()
+    {
         // Collect footnotes and move them to the end of the document.
         const footnotes = this.main_article.querySelectorAll(".footnote"),
               aside = this.article_section.querySelector("aside"),
@@ -109,7 +225,10 @@ class ArticleManager
                 footnote.replaceWith(mark);
             }
         }
+    }
 
+    make_headings_targets()
+    {
 		// Go through the headlines and set their name= attribute to their
 		// text contents. 
 		let heading_ids = Array();
@@ -126,8 +245,12 @@ class ArticleManager
 					}
 				}
 			});
+    }
 
-
+    process_links()
+    {
+        const link_info = this.link_info;
+        
         // Go through the links and set their targets correctly.
         // Also set link classes.
         this.article_section.querySelectorAll("a.t4wiki-link").forEach(
@@ -135,7 +258,7 @@ class ArticleManager
                 const href = decodeURI(a.getAttribute("href")),
 					  parts = href.split("#"),
 					  key = parts[0].toLowerCase(), 
-					  fulltitle = self.link_info[key];
+					  fulltitle = link_info[key];
 
 				var anchor;
 				if (parts.length == 2)
@@ -169,13 +292,70 @@ class ArticleManager
             });
     }
 
-	on_search_result_loaded(response)
-	{
-		const self = this;
-		response.text().then(function(text) {
-			self.search_result_section.innerHTML = text;
-		});
-	}
+    construct_toc_maybe()
+    {
+        document.querySelectorAll("div.t4wiki-toc").forEach(
+            this.construct_toc.bind(this));
+    }
+
+    construct_toc(div)
+    {
+        // Walk the DOM tree upwards to find the <article> element. 
+        let here = div;
+        while (here.tagName != "ARTICLE")
+        {
+            here = here.parentNode;
+
+            // Better safe than sorry. 
+            if (here.tagName == "BODY")
+            {
+                throw "HTML nesting error.";
+            }
+        }
+        const article = here;
+
+        console.log(article);
+
+        var h_elements = article.querySelectorAll("h1,h2,h3,h4,h5,h6");
+        var min_level = 7;
+        h_elements.forEach( element => {
+            const level = Heading.h_element_level(element);
+            if (level < min_level)
+            {
+                min_level = level;
+            }
+        });
+        var toc = new Heading(null, min_level-1, null);
+        var current = toc;
+        for(var a = 0; a < h_elements.length; a++)
+        {
+            var h_element = h_elements[a];
+            
+            var level = Heading.h_element_level(h_element);
+            if ( level <= current.level )
+            {
+                while (level < current.level)
+                {
+                    current = current.parent;
+                }
+                current = current.parent.append(h_element)
+            }
+            else if (level > current.level)
+            {
+                current = current.append(h_element);
+            }
+        };
+
+        console.log(toc);
+        
+        // Remove redundant first entries.
+        while (toc.children.length == 1 && toc.caption == "")
+        {
+            toc = toc.children[0];
+        }
+        
+        div.appendChild(toc.ul());
+    }
 }
 
 
