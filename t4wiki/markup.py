@@ -15,7 +15,16 @@ from .context import Context, get_languages
 from .db import insert_from_dict, execute, query_one
 from .utils import title2path
 
-title_re = re.compile(r"(?:([a-z]{2,3}):)?(.*?)\s*(?:\((.*)\))?$")
+title_re = re.compile(r"""
+  (?:
+    (?P<language>[a-z]{2,3}):)?
+    (?P<title>.*?)
+    \s*
+    (?:
+          \((?P<namespace>[^\(\),]*)\)
+        | \((?P<ptitle>[^\(\),]*),\s* (?P<pnamespace>[^\(,]*)\)
+    )?$
+    """, re.VERBOSE)
 class Title(NamedTuple):
     lang: Language
     title: str
@@ -29,7 +38,14 @@ class Title(NamedTuple):
         title = normalize_whitespace(title)
 
         match = title_re.match(title)
-        lang, title, namespace = match.groups()
+        d = match.groupdict()
+        lang = d["language"]
+        title = d["title"]
+        namespace = d["namespace"]
+
+        if d["ptitle"]:
+            title = "%(title)s (%(ptitle)s)" % d
+            namespace = d["pnamespace"]
 
         if ignore_namespace:
             if namespace:
