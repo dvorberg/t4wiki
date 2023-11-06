@@ -173,8 +173,7 @@ def article_view(article_title=None):
             where = None
             query_namespace = ""
 
-        search_result = full_text_search(article_title,
-                                         where, sql.orderby("rank DESC"))
+        search_result = full_text_search(article_title, where)
         if result:
             regular_result = model.Article.select_by_primary_key(result[0])
         else:
