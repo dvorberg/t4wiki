@@ -35,7 +35,7 @@ class toc(Macro):
     environments = { "block" }
 
     def html_element(self):
-        return "<!--INHALT-->"
+        return '<div class="t4wiki-toc"></div>'
 
 class subdued(ClassMacro):
     pass
