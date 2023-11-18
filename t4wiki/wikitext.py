@@ -56,8 +56,8 @@ class Bild(LinkMacro):
             description = " ".join(params)
             return block_level_figure(source, description)
 
-image = Bild
-Image = Bild
+class image(Bild): pass
+class Image(Bild): pass
 
 class Kategorie(LinkMacro):
     def html(self, source, *params):
