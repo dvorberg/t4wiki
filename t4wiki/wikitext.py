@@ -1,6 +1,8 @@
 from tinywikitext.macro import RAWMacro, TagMacro, LinkMacro, MacroLibrary
 from tinymarkup.utils import html_start_tag
 
+from .macrotools import block_level_figure, float_right_image
+
 class bibtex(RAWMacro):
     environments = { "block" }
 
@@ -45,13 +47,17 @@ class ref(TagMacro):
 
 class Bild(LinkMacro):
     def html(self, source, *params):
-        return f'<pre>Bild:{repr(source)} + {repr(params)}</pre>\n'
+        if "thumb" in params:
+            params = list(params)
+            params.remove("thumb")
+            description = " ".join(params)
+            return float_right_image(source, description)
+        else:
+            description = " ".join(params)
+            return block_level_figure(source, description)
 
-class Image(Bild):
-    pass
-
-class image(Bild):
-    pass
+image = Bild
+Image = Bild
 
 class Kategorie(LinkMacro):
     def html(self, source, *params):
