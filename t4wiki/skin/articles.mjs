@@ -116,9 +116,9 @@ class ArticleManager
         this.start_full_text_search();
         this.deal_with_includes();
         this.collect_footnotes();
-        queueMicrotask(this.make_headings_targets.bind(this));
-        queueMicrotask(this.process_links.bind(this));
-        queueMicrotask(this.construct_toc_maybe.bind(this));
+        this.make_headings_targets();
+        this.process_links();
+        this.construct_toc_maybe();
     }
 
     start_full_text_search()
@@ -358,34 +358,72 @@ class ArticleManager
     }
 }
 
+const illegal_filename_char_re = /\s+|\./i;
+class FileInfoByFilename
+{
+	constructor(info)
+	{
+		for (const filename in info)
+		{
+			this[filename] = info[filename];
+		}
+	}
+
+	search_by_filename(filename)
+	{
+		return this[filename] ||
+			this[this.normalize_filename(filename)] ||
+			this[this.normalize_filename(filename.toLowerCase())] ||
+			null;
+	}
+
+	normalize_filename(filename)
+	{
+		return filename
+			.replace(illegal_filename_char_re, "_")
+			.replace("ä", "a")
+			.replace("ö", "o")
+			.replace("ü", "u")
+			.replace("ß", "s")
+			.replace("Ä", "A")
+			.replace("Ö", "Ö")
+			.replace("Ü", "U");
+	}
+}
 
 class FileManager
 {
     constructor(file_info)
     {
-        this.files_by_article_id = {};
+        this.fileinfos_by_article_id = {};
         for (const article_id in file_info)
         {
-            this.files_by_article_id[parseInt(article_id)] =
-                file_info[article_id];
+            this.fileinfos_by_article_id[parseInt(article_id)] =
+                new FileInfoByFilename(file_info[article_id]);
         }
         
         document.addEventListener("DOMContentLoaded",
                                   this.on_dom_content_loaded.bind(this));
     }
 
+	fileinfo_for_article(id)
+	{
+		return this.fileinfos_by_article_id[id] ||
+			new FileInfoByFilename({});
+	}
+
     on_dom_content_loaded(event)
     {
         for(const div of document.querySelectorAll("[data-article-id]"))
         {
-            const article_id = parseInt(div.getAttribute("data-article-id"));
-
+            const article_id = parseInt(div.getAttribute("data-article-id")),
+				  fileinfos = this.fileinfo_for_article(article_id);
+			
             for(const img of div.querySelectorAll("img.preview-image"))
             {
                 const filename = decodeURI(img.getAttribute("src")),
-                      files = this.files_by_article_id[article_id] || null,
-                      fileinfo = files && files[filename];
-				
+                      fileinfo = fileinfos.search_by_filename(filename);
+
                 if (fileinfo)
                 {
                     var size = 300;
@@ -405,11 +443,15 @@ class FileManager
                     img["src"] = `${globalThis.site_url}/previews/` +
                           `${preview_dir}/preview${size}${preview_ext}`;
 
-                    const caption = img.parentNode.querySelector("figcaption");
-                    if (caption && caption.textContent == "")
-                    {
-                        caption = fileinfo.title;
-                    }
+					if (img.parentNode.tagName == "FIGURE")
+					{
+						const caption = img.parentNode.querySelector(
+							"figcaption");
+						if (caption && caption.textContent == "")
+						{
+							caption.textContent = fileinfo.title;
+						}
+					}
                 }
 				else
 				{
