@@ -10,6 +10,8 @@ from wikklytext.to_html import HTMLCompiler, to_html, to_inline_html
 from ll.xist import xsc
 from ll.xist.ns import html
 
+import transliterate
+
 from .macrotools import block_level_figure, float_right_image
 
 class German(LanguageMacro):
@@ -81,7 +83,7 @@ class bselk(Macro):
 
 class hebrew(Macro):
     def html_element(self, value):
-        return f"<code>transcode this: {value}</code>"
+        return transliterate.cjhebrew_to_unicode(value)
 
 class blockquote(Macro):
     environments = { "block" }
