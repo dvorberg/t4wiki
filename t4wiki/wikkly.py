@@ -82,8 +82,18 @@ class bselk(Macro):
         return f"BSELK {value}"
 
 class hebrew(Macro):
-    def html_element(self, value):
-        return transbeta.cjhebrew_to_unicode(value)
+    environments = { "block", "inline", }
+
+    def html_element(self, source, writer:HTMLWriter):
+        if self.environment == "block":
+            tag = "p"
+        else:
+            tag = "span"
+
+        writer.open(tag, lang="he")
+        writer.print(transbeta.cjhebrew_to_unicode(source))
+        writer.close(tag)
+
 
 class blockquote(Macro):
     environments = { "block" }
