@@ -3,6 +3,9 @@ from typing import NamedTuple, List
 
 from flask import current_app as app
 
+from ll.xist import xsc, parse, xfind
+from ll.xist.ns import html
+
 from t4 import sql
 from t4.typography import normalize_whitespace
 
@@ -149,7 +152,21 @@ class CompiledArticle(NamedTuple):
     article_includes: List[str]
     macro_info: dict
 
-def compile_article(titles, source, format, root_language, user_info):
+def compile_article(titles, source, format,
+                    root_language, user_info) -> CompiledArticle:
+    """
+    Since for HTML the input language and one of the target languages
+    are identical, it is treated specially below.
+    """
+    if format == "html":
+        return compile_article_from_html(
+            titles, source, format, root_language, user_info)
+    else:
+        return compile_article_from_markup(
+            titles, source, format, root_language, user_info)
+
+def compile_article_from_markup(titles, source, format,
+                                root_language, user_info) -> CompiledArticle:
     """
     Returns a CompiledArticle named tuple created from the input
     or raises a tinymarkup.exceptions.MarkupError.
@@ -186,6 +203,25 @@ def compile_article(titles, source, format, root_language, user_info):
                              context.article_links,
                              context.article_includes,
                              context.macro_info, )
+
+def compile_article_from_html(titles, source, format,
+                              root_language, user_info) -> CompiledArticle:
+    """
+    Input HTML is tidied and the contents of the <body>-tag are returned.
+    """
+    doc = parse.tree( source,
+                      parse.Tidy(),
+                      parse.NS(html),
+                      parse.Node(pool=xsc.Pool(html)) )
+
+
+    return CompiledArticle("", # html
+                           "", # tsearch
+                           [], # links
+                           [], # includes
+                           {}) # macro_info
+
+
 
 def update_titles_for(id, titles, root_language):
     execute("DELETE FROM wiki.article_title WHERE article_id = %i" % id)
