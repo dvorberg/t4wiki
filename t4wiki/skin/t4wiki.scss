@@ -40,6 +40,11 @@
                 max-width: 100%;
             }
         }
+
+        *[lang=he]
+        {
+            text-align: right; 
+        }
     }
 
     section.recent-changes
