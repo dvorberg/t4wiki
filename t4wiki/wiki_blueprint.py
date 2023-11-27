@@ -24,6 +24,11 @@ from . import db
 from . import ptutils
 
 
+
+# This ought not to be done here. “Double quoting” the “?” character
+# is neccessary for URLs to pass through the Apache reverse proxy safely.
+# It must be double quoted when creating URLs and unquoted before URL
+# processing.
 from werkzeug import serving
 
 quoted_question_mark_re = re.compile("%3[fF]")
@@ -40,7 +45,6 @@ class Blueprint(Blueprint):
         super().register(app, options)
 
         app.debug_sql = app.debug and (os.getenv("DEBUG_SQL") is not None)
-        #db.init_app(app)
 
 bp = Blueprint("wiki", __name__, url_prefix="/wiki")
 
