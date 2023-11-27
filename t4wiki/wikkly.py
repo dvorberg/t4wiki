@@ -10,6 +10,10 @@ from wikklytext.to_html import HTMLCompiler, to_html, to_inline_html
 from ll.xist import xsc
 from ll.xist.ns import html
 
+import transbeta
+
+from .macrotools import block_level_figure, float_right_image
+
 class German(LanguageMacro):
     name = "de"
 
@@ -35,7 +39,7 @@ class toc(Macro):
     environments = { "block" }
 
     def html_element(self):
-        return "<!--INHALT-->"
+        return '<div class="t4wiki-toc"></div>'
 
 class subdued(ClassMacro):
     pass
@@ -78,8 +82,18 @@ class bselk(Macro):
         return f"BSELK {value}"
 
 class hebrew(Macro):
-    def html_element(self, value):
-        return f"<code>transcode this: {value}</code>"
+    environments = { "block", "inline", }
+
+    def html_element(self, source, writer:HTMLWriter):
+        if self.environment == "block":
+            tag = "p"
+        else:
+            tag = "span"
+
+        writer.open(tag, lang="he")
+        writer.print(transbeta.cjhebrew_to_unicode(source))
+        writer.close(tag)
+
 
 class blockquote(Macro):
     environments = { "block" }
@@ -95,22 +109,15 @@ class Bild(Macro):
 
     def html_element(self, filename, info=""):
         if self.environment == "block":
-            return html.figure(
-                html.img(src=filename,
-                         class_="rounded preview-image preview-1800"),
-                html.figcaption(info, class_="figure-caption"),
-                class_="figure t4wiki-figure")
+            return block_level_figure(filename, info)
         else:
-            return html.img(src=filename,
-                            class_="rounded preview-image preview-1800")
+            return float_right_image(filename)
 
 class BildRechts(Macro):
     name = "bildrechts"
 
     def html_element(self, filename, info=""):
-        return html.img(src=filename,
-                        title=info,
-                        class_="rounded float-end preview-image preview-300")
+        return float_right_image(filename, info)
 
 class HTMLMacro(Macro):
     name = "html"

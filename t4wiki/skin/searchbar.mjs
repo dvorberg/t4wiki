@@ -120,6 +120,14 @@ class SearchbarManager
                 }
             }
         }
+
+        // The Escape key opens the menu.
+        // Does this need a condition?
+        // document.querySelector("article.main") !== null && 
+        if (event.key == "Escape")
+        {
+            document.querySelector("button.dropdown-toggle").click()
+        }
     }
 }
 
