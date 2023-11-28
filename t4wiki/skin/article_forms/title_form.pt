@@ -120,6 +120,11 @@
                                       ptutils.selected(value == 'wikitext')">
               (Media-) Wiki Text
             </option>
+            <option value="html"
+                    tal:attributes="selected
+                                      ptutils.selected(value == 'html')">
+              HTML
+            </option>
           </select>
         </div>
 
