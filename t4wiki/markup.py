@@ -3,9 +3,6 @@ from typing import NamedTuple, List
 
 from flask import current_app as app
 
-from ll.xist import xsc, parse, xfind
-from ll.xist.ns import html
-
 from t4 import sql
 from t4.typography import normalize_whitespace
 
@@ -13,6 +10,7 @@ from tinymarkup.language import Language
 from tinymarkup.compiler import CompilerDuplexer
 
 from . import model
+from . import html_markup
 from .exceptions import TitleUnavailable
 from .context import Context, get_languages
 from .db import insert_from_dict, execute, query_one
@@ -159,7 +157,7 @@ def compile_article(titles, source, format,
     are identical, it is treated specially below.
     """
     if format == "html":
-        return compile_article_from_html(
+        return extract_article_from_html(
             titles, source, format, root_language, user_info)
     else:
         return compile_article_from_markup(
@@ -204,20 +202,17 @@ def compile_article_from_markup(titles, source, format,
                              context.article_includes,
                              context.macro_info, )
 
-def compile_article_from_html(titles, source, format,
+def extract_article_from_html(titles, source, format,
                               root_language, user_info) -> CompiledArticle:
     """
     Input HTML is tidied and the contents of the <body>-tag are returned.
     """
-    doc = parse.tree( source,
-                      parse.Tidy(),
-                      parse.NS(html),
-                      parse.Node(pool=xsc.Pool(html)) )
+    doc = html_markup.dom_tree(source)
+    body = html_markup.body_contents(doc)
 
-
-    return CompiledArticle("", # html
-                           "", # tsearch
-                           [], # links
+    return CompiledArticle(body.string(), # html
+                           html_markup.tsearch(body), # tsearch
+                           list(html_markup.wiki_links(body)), # links
                            [], # includes
                            {}) # macro_info
 
