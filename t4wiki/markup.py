@@ -139,6 +139,12 @@ def tools_by_format(source_format):
             from .wikitext import macro_library
 
             return Parser, HTMLCompiler, TSearchCompiler, macro_library
+        case "html":
+            # articles_blueprint.title_form calls us to check if the format
+            # string is valid. markup.compile_article() will re-route html
+            # to extract_article_from_html() rather than using these None
+            # values.
+            return None, None, None, None
         case _:
             raise NotImplementedError(source_format)
 
@@ -211,7 +217,7 @@ def extract_article_from_html(titles, source, format,
     body = html_markup.body_contents(doc)
 
     return CompiledArticle(body.string(), # html
-                           html_markup.tsearch(body), # tsearch
+                           html_markup.tsearch(body, root_language), # tsearch
                            list(html_markup.wiki_links(body)), # links
                            [], # includes
                            {}) # macro_info
