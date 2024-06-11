@@ -22,7 +22,7 @@ ALTER TEXT SEARCH CONFIGURATION  german
     WITH german_hunspell, pg_catalog.simple; -- pg_catalog.simple;
 
 
-Set search_path = public;
+set search_path = public;
 CREATE EXTENSION IF NOT EXISTS citext;
 
 DROP SCHEMA IF EXISTS wiki CASCADE;
