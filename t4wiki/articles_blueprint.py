@@ -2,7 +2,7 @@ import os.path as op, re, string, datetime, io, json, time, tomllib, pathlib
 import sys, subprocess, urllib.parse, mimetypes, unicodedata
 from PIL import Image
 
-from flask import (current_app as app, url_for,
+from flask import (current_app as app, url_for, send_file,
                    g, request, session, abort, redirect, make_response)
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.exceptions import Unauthorized
@@ -516,23 +516,33 @@ def download_upload(id:int):
 
         filename, data = cc.fetchone()
 
+    ic(type(data))
+
     response = make_response(bytes(data), 200)
     mimetype, subtype = mimetypes.guess_type(filename)
     if not mimetype:
         mimetype = "application/octet-stream"
-    response.headers["Content-Type"] = mimetype
 
-    filename_q = urllib.parse.quote(filename)
-    filename_repl = filename.replace('"', "'")
+    ic(send_file)
 
-    # filename* documented here:
-    # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
-    response.headers["Content-Disposition"] = (f'attachment; '
-                                               f'filename="{filename_repl}"; '
-                                               f'filename*="{filename_q}";')
-    response.headers["Cache-Control"] = "max-age=6048000" # 10 weeks
+    return send_file(io.BytesIO(bytes(data)),
+                     download_name = filename,
+                     as_attachment = True,
+                     mimetype=mimetype)
 
-    return response
+    # response.headers["Content-Type"] = mimetype
+
+    # filename_q = urllib.parse.quote(filename)
+    # filename_repl = filename.replace('"', "'")
+
+    # # filename* documented here:
+    # # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
+    # response.headers["Content-Disposition"] = (f'attachment; '
+    #                                            f'filename="{filename_repl}"; '
+    #                                            f'filename*="{filename_q}";')
+    # response.headers["Cache-Control"] = "max-age=6048000" # 10 weeks
+
+    # return response
 
 @bp.route("/all.cgi", methods=("GET", "POST"))
 @role_required("Writer")
