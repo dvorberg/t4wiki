@@ -51,7 +51,7 @@ Prism.languages.wikkly = {
 	},
 
 	'wikkly-enumeration': {
-		pattern: /(^|\n)[#•\*]+/
+		pattern: /(^|\n)[#•\*Ⅰ-ↁ]+/
 	},
 	
 	'macro': {
