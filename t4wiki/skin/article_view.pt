@@ -43,7 +43,7 @@
         <article class="main" lang="${article.root_language}"
                  data-article-id="${article.id}">
           <p class="alert alert-info"
-             tal:condition="query != article.full_title">
+             tal:condition="query.lower() != article.full_title.lower()">
             Forwarded from <a>“${query}”</a>.
           </p>
           
