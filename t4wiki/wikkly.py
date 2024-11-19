@@ -146,7 +146,7 @@ class clear(Macro):
 class downloads(Macro):
     environments = { "block" }
     def html_element(self):
-        return '<div><b>DOWNLOADS</b></div>'
+        return '<div class="t4wiki-downloads" ></div>'
 
 class poem(Macro):
     environments = { "block" }
