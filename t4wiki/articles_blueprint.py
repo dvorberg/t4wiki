@@ -152,7 +152,13 @@ def title_form(id:int=None,
         titles = model.ArticleTitle.select(
             sql.where("NOT is_main_title").and_(article.id_where),
             sql.orderby("title, namespace"))
-        aliases = "\n".join([ t.full_title for t in titles ])
+
+        def title_string(t):
+            if t.language == article.root_language:
+                return t.full_title
+            else:
+                return t.language + ":" + t.full_title
+        aliases = "\n".join([ title_string(t) for t in titles ])
 
     languages = [ l for l in get_languages().values()
                   if l.ui_name is not None ]
