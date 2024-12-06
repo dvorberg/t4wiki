@@ -1,10 +1,10 @@
 import time
 from io import StringIO
 
-from tinymarkup.context import Context
 from wikklytext.macro import ( WikklyMacro as Macro, WikklySource,
                                MacroLibrary, LanguageMacro, ClassMacro, )
 from tinymarkup.writer import HTMLWriter
+from tinymarkup.exceptions import MacroError
 from wikklytext.to_html import HTMLCompiler, to_html, to_inline_html
 
 from ll.xist import xsc
@@ -146,7 +146,11 @@ class clear(Macro):
 class downloads(Macro):
     environments = { "block" }
     def html_element(self):
-        return '<div class="t4wiki-downloads" ></div>'
+        if getattr(self.context, "downloads_macro_used", False):
+            raise MacroError("The <<downloads>> macro may only be used once "
+                             "per article.")
+        self.context.downloads_macro_used = True
+        return '<div class="t4wiki-downloads"></div>'
 
 class poem(Macro):
     environments = { "block" }
