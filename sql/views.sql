@@ -128,12 +128,14 @@ upload_info_by_filename AS (
            filename,
            jsonb_build_object('id', id,
                               'slug', slug,
-                              'preview_ext', preview_ext,
-                              'width', width,
-                              'height', height,
+                              'pext', preview_ext,
+                              'w', width,
+                              'h', height,
                               'size', size,
-                              'title', title,
-                              'description', description) AS upload_info
+                              't', title,
+                              'dl', is_download,
+                              'g', gallery, 
+                              'd', description) AS upload_info
       FROM upload_info
 )
 SELECT article_id, json_object_agg(filename, upload_info) AS uploads_info
