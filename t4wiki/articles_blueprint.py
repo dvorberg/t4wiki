@@ -458,7 +458,7 @@ def modify_upload(article_id:int, upload_id:int, name, value):
     if name == "sortrank":
         value = float(value)
     elif name in { "gallery", "is_download" }:
-        value = bool(value == "true")
+        value = bool(value == "on")
     elif name == "filename":
         value = sanitize_filename(value)
 
@@ -522,33 +522,15 @@ def download_upload(id:int):
 
         filename, data = cc.fetchone()
 
-    ic(type(data))
-
     response = make_response(bytes(data), 200)
     mimetype, subtype = mimetypes.guess_type(filename)
     if not mimetype:
         mimetype = "application/octet-stream"
 
-    ic(send_file)
-
     return send_file(io.BytesIO(bytes(data)),
                      download_name = filename,
                      as_attachment = True,
                      mimetype=mimetype)
-
-    # response.headers["Content-Type"] = mimetype
-
-    # filename_q = urllib.parse.quote(filename)
-    # filename_repl = filename.replace('"', "'")
-
-    # # filename* documented here:
-    # # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
-    # response.headers["Content-Disposition"] = (f'attachment; '
-    #                                            f'filename="{filename_repl}"; '
-    #                                            f'filename*="{filename_q}";')
-    # response.headers["Cache-Control"] = "max-age=6048000" # 10 weeks
-
-    # return response
 
 @bp.route("/all.cgi", methods=("GET", "POST"))
 @role_required("Writer")
