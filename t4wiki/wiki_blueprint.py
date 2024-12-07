@@ -51,6 +51,7 @@ bp = Blueprint("wiki", __name__, url_prefix="/wiki")
 bp.skin.add_mjs_import("t4wiki", "t4wiki.mjs")
 bp.skin.add_mjs_import("articles", "articles.mjs")
 bp.skin.add_mjs_import("searchbar", "searchbar.mjs")
+bp.skin.add_mjs_import("xisty", "xisty.mjs")
 
 @bp.skin.template_globals
 def template_globals():
