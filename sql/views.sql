@@ -132,6 +132,7 @@ upload_info_by_filename AS (
                               'w', width,
                               'h', height,
                               'size', size,
+                              'n', filename,
                               't', title,
                               'dl', is_download,
                               'g', gallery, 
