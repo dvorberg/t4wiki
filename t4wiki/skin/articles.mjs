@@ -1,4 +1,5 @@
 import { title2path, normalize_whitespace } from "t4wiki";
+import { html } from "xisty";
 
 class Heading
 {
@@ -99,6 +100,10 @@ class ArticleManager
         this.id_by_title = id_by_title;
         this.info_by_id = info_by_id;
 
+		// Make a copy because we will set the entries to null
+		// after the include has been performed. 
+		this._id_by_title = structuredClone(id_by_title);
+
         // Make a lower case copy of each of the link targets.
         this.link_info = link_info;
         for (var key in this.link_info)
@@ -176,8 +181,10 @@ class ArticleManager
         
         this.main_article.querySelectorAll(
             "div.t4wiki-include").forEach(function(div) {
+				// In this method use this._id_by_title where we set the
+				// entries to null after use. 
                 var title = div.getAttribute("data-article-title"),
-                    id = self.id_by_title[title],
+                    id = self._id_by_title[title],
                     article = included_by_id[id];
                 
                 if (article)
@@ -187,7 +194,7 @@ class ArticleManager
                         div.appendChild(child.cloneNode(true));
                     }
                     article.remove();
-                    self.id_by_title[title] = null;
+                    self._id_by_title[title] = null;
                 }
             });
     }
@@ -229,7 +236,7 @@ class ArticleManager
 
     make_headings_targets()
     {
-		// Go through the headlines and set their name= attribute to their
+		// Go through the headlines and set the name= attribute to their
 		// text contents. 
 		let heading_ids = Array();
 		this.article_section.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach(
@@ -379,22 +386,19 @@ class FileInfoByFilename
 
 	normalize_filename(filename)
 	{
-		return filename
-			.replace(illegal_filename_char_re, "_")
-			.replace("ä", "a")
-			.replace("ö", "o")
-			.replace("ü", "u")
-			.replace("ß", "s")
-			.replace("Ä", "A")
-			.replace("Ö", "Ö")
-			.replace("Ü", "U");
+		// For String.prototype.normalize() cf. 
+		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/normalize
+		return filename.replace(illegal_filename_char_re, "_").normalize("NFC");
 	}
 }
 
 class FileManager
-{
+{	
     constructor(file_info)
     {
+		/* The ‘file_info’ JSON is queries using json_object_agg() from the
+		   uploads.upload_info_for_view SQL view. 
+		 */
         this.fileinfos_by_article_id = {};
         for (const article_id in file_info)
         {
@@ -416,50 +420,108 @@ class FileManager
     {
         for(const div of document.querySelectorAll("[data-article-id]"))
         {
-            const article_id = parseInt(div.getAttribute("data-article-id")),
+			const article_id = parseInt(div.getAttribute("data-article-id")),
 				  fileinfos = this.fileinfo_for_article(article_id);
-			
-            for(const img of div.querySelectorAll("img.preview-image"))
+
+			this.handle_images(div, article_id, fileinfos);
+			this.handle_downloads(div, article_id, fileinfos);
+		}
+    }
+
+	handle_images(article_div, article_id, fileinfos)
+	{
+        for(const img of article_div.querySelectorAll("img.preview-image"))
+        {
+            const filename = decodeURI(img.getAttribute("src")),
+                  fileinfo = fileinfos.search_by_filename(filename);
+
+            if (fileinfo)
             {
-                const filename = decodeURI(img.getAttribute("src")),
-                      fileinfo = fileinfos.search_by_filename(filename);
-
-                if (fileinfo)
+                var size = 300;
+                if (img.classList.contains("preview-1800"))
                 {
-                    var size = 300;
-                    if (img.classList.contains("preview-1800"))
-                    {
-                        size = 1800;
-                    }
-                    else if (img.classList.contains("preview-600"))
-                    {
-                        size = 600;
-                    }
-
-                    const id = fileinfo["id"], slug = fileinfo["slug"],
-                          preview_ext = fileinfo["preview_ext"],
-                          preview_dir = `${article_id}_${id}_${slug}`;
-                    
-                    img["src"] = `${globalThis.site_url}/previews/` +
-                          `${preview_dir}/preview${size}${preview_ext}`;
-
-					if (img.parentNode.tagName == "FIGURE")
-					{
-						const caption = img.parentNode.querySelector(
-							"figcaption");
-						if (caption && caption.textContent == "")
-						{
-							caption.textContent = fileinfo.title;
-						}
-					}
+                    size = 1800;
                 }
-				else
+                else if (img.classList.contains("preview-600"))
+                {
+                    size = 600;
+                }
+
+                const id = fileinfo["id"], slug = fileinfo["slug"],
+                      preview_ext = fileinfo["pext"],
+                      preview_dir = `${article_id}_${id}_${slug}`;
+                
+                img["src"] = `${globalThis.site_url}/previews/` +
+                    `${preview_dir}/preview${size}${preview_ext}`;
+
+				if (img.parentNode.tagName == "FIGURE")
 				{
-					img.classList.add("missing");
+					const caption = img.parentNode.querySelector(
+						"figcaption");
+					if (caption && caption.textContent == "")
+					{
+						caption.textContent = fileinfo.title;
+					}
 				}
             }
+			else
+			{
+				img.classList.add("missing");
+			}
         }
     }
+
+	handle_downloads(article_div, article_id, fileinfos)
+	{		
+        for(const div of article_div.querySelectorAll("div.t4wiki-downloads"))
+		{			
+			console.log(div);
+
+			// Let’s walk up from where we are.
+			var here = div;
+			while(here.tagName != "BODY")
+			{
+				here = here.parentNode;
+				
+				if (here.classList.contains("t4wiki-include"))
+				{
+					const title = here.getAttribute("data-article-title"),
+						  id = globalThis.article_manager.id_by_title[title];
+					console.log(title);
+					console.log(id);
+					if (id) this.populate_downloads_div(div, id);
+					break;
+				}
+				else if (here.tagName == "ARTICLE")
+				{
+					const id = here.getAttribute("data-article-id");
+					this.populate_downloads_div(div, parseInt(id));
+					break;
+				}
+			} // while
+		}
+	}
+
+	populate_downloads_div(div, article_id)
+	{
+		console.log("populate_downloads");
+		console.log(article_id);
+		const fileinfos = this.fileinfo_for_article(article_id);
+		
+		for (const filename in fileinfos)
+		{
+			const fileinfo = fileinfos[filename];
+
+			if (fileinfo.dl)
+			{
+				const href = globalThis.site_url + 
+			          `/articles/download_upload.cgi?id=${fileinfo.id}`;
+				const dl = html.div(html.a(fileinfo.n, {href: href}),
+									{ class: "mb-1"} );
+				dl.append_to(div);
+			}
+		}
+	}
 }
 
 export { ArticleManager, FileManager };
