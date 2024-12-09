@@ -370,9 +370,11 @@ class FileInfoByFilename
 {
 	constructor(info)
 	{
+		this.length = 0;
 		for (const filename in info)
 		{
 			this[filename] = info[filename];
+			this.length++;
 		}
 	}
 
@@ -390,6 +392,30 @@ class FileInfoByFilename
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/normalize
 		return filename.replace(illegal_filename_char_re, "_").normalize("NFC");
 	}
+}
+
+const class_to_exts = {
+	"text": [ "txt", "doc", "docx", "otd", ],
+	"rasterimage": [ "jpg", "jpeg", "png", "gif", "png", ],
+	"pdf": [ "pdf" ],
+	"zip": [ "zip", "tgz", ]
+}
+
+function set_fileicon_class(icon_dom, ext)
+{
+	ext = ext.toLowerCase();
+	const all = icon_dom.querySelector("#all"),
+		  extension_text = icon_dom.querySelector(".extension-text");
+
+	for ( const cls in class_to_exts )
+	{
+		if (class_to_exts[cls].includes(ext))
+		{
+			all.classList.add(cls);
+			break;
+		}
+	}
+	extension_text.textContent = ext.toUpperCase();
 }
 
 class FileManager
@@ -475,8 +501,6 @@ class FileManager
 	{		
         for(const div of article_div.querySelectorAll("div.t4wiki-downloads"))
 		{			
-			console.log(div);
-
 			// Let’s walk up from where we are.
 			var here = div;
 			while(here.tagName != "BODY")
@@ -487,8 +511,6 @@ class FileManager
 				{
 					const title = here.getAttribute("data-article-title"),
 						  id = globalThis.article_manager.id_by_title[title];
-					console.log(title);
-					console.log(id);
 					if (id) this.populate_downloads_div(div, id);
 					break;
 				}
@@ -504,21 +526,63 @@ class FileManager
 
 	populate_downloads_div(div, article_id)
 	{
-		console.log("populate_downloads");
-		console.log(article_id);
 		const fileinfos = this.fileinfo_for_article(article_id);
-		
-		for (const filename in fileinfos)
-		{
-			const fileinfo = fileinfos[filename];
 
-			if (fileinfo.dl)
+		div = html.Wrapper(div);
+
+		if (fileinfos.length > 0)
+		{
+			const cardgroup = html.div(
+				{class: "row row-cols-2 row-cols-xl-3 g-2 mb-4"});
+			
+			div.append(html.h4("Downloads"),
+					   cardgroup);
+			
+			for (const filename in fileinfos)
 			{
-				const href = globalThis.site_url + 
-			          `/articles/download_upload.cgi?id=${fileinfo.id}`;
-				const dl = html.div(html.a(fileinfo.n, {href: href}),
-									{ class: "mb-1"} );
-				dl.append_to(div);
+				const fileinfo = fileinfos[filename];
+
+				if (fileinfo.dl)
+				{
+					const href = globalThis.site_url + 
+						  `/articles/download_upload.cgi?id=${fileinfo.id}`;
+
+					let filename = null;
+					if (fileinfo.t)
+					{
+						filename = html.span(" ", "(" + fileinfo.n + ")",
+											 {class: "text-muted text-small"});
+					}
+					const ext = fileinfo.n.toLowerCase(
+					                            ).split(".").slice(-1)[0],
+						  title = fileinfo.t || fileinfo.n,
+						  body = html.div(
+							  html.h5(title, filename),
+							  html.p(html.span(fileinfo.d,
+											   {class: "text-muted"}),
+									 " ",
+									 html.a("download",
+											{href: href,
+											 class: "__stretched-link"}))),
+						  icon = html.embed({
+							  class: "icon",
+							  type: "image/svg+xml",
+							  src: "/t4wiki_skin/filetype_icon.svg"});
+					
+					icon._.addEventListener("load", event => {
+						const icon_dom = event.target.getSVGDocument();
+						set_fileicon_class(icon_dom, ext);
+					});
+					
+					const inner = html.div({class: "row g-0"},
+										   html.div({class: "col-2"}, icon),
+										   html.div({class: "col-10"}, body));
+
+					cardgroup.append(
+						html.div({class: "col"},
+								 html.div({ class: "download h-100"},
+										  inner)));
+				}
 			}
 		}
 	}
