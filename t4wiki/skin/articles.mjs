@@ -563,7 +563,7 @@ class FileManager
 									 " ",
 									 html.a("download",
 											{href: href,
-											 class: "__stretched-link"}))),
+											 class: "stretched-link"}))),
 						  icon = html.embed({
 							  class: "icon",
 							  type: "image/svg+xml",
