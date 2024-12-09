@@ -113,6 +113,27 @@
     }
 }
 
+div.t4wiki-downloads
+{
+    font-size: 80%;
+
+    div.download
+    {
+        overflow: hidden;
+    }
+    
+    h5
+    {
+        font-size: 1em;
+        color: black;
+    }
+
+    embed.icon
+    {
+        margin-right: 1rem;
+    }
+}
+
 textarea.font-monospace
 {
     font-size: 90%;
