@@ -563,7 +563,7 @@ class FileManager
 									 " ",
 									 html.a("download",
 											{href: href,
-											 class: "stretched-link"}))),
+											 class: "stretched-link"}))), 
 						  icon = html.embed({
 							  class: "icon",
 							  type: "image/svg+xml",
@@ -580,7 +580,8 @@ class FileManager
 
 					cardgroup.append(
 						html.div({class: "col"},
-								 html.div({ class: "download h-100"},
+								 html.div({ class: "download h-100 " +
+											       "position-relative"},
 										  inner)));
 				}
 			}
