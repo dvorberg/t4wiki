@@ -53,7 +53,12 @@
     #all.zip { #ZIP { display: inline } }
     
 </style>
-<g id="all">
+<clipPath id="page">
+	<polygon class="base"
+             points="151.4,0 0,0 0,300 210,300 210,58.6 180.7,29.3 	"/>
+</clipPath>
+
+<g id="all" clip-path="url(#page)">
   <g id="base">
 	<polygon class="base"
              points="151.4,0 0,0 0,300 210,300 210,58.6 180.7,29.3 	"/>
