@@ -17,10 +17,11 @@
     <metal:block metal:fill-slot="head_slot">
       <script type="module" tal:condition="article">
           import { ArticleManager, FileManager } from "articles";
+          globalThis.file_manager = new FileManager((${file_info_json}));
           globalThis.article_manager = new ArticleManager(${title_to_id_js},
                                                           ${meta_info_js},
                                                           ${link_info});
-          globalThis.file_manager = new FileManager((${file_info_json}));
+          
         </script>
     </metal:block>
   </head>
