@@ -155,7 +155,8 @@ class downloads(Macro):
 class poem(Macro):
     environments = { "block" }
     def html_element(self, poem):
-        return '<pre>{poeam}</pre>'
+        poem = poem.strip()
+        return f'<div class="poem">{poem}</div>'
 
 
 macro_library = MacroLibrary()

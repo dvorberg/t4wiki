@@ -111,6 +111,14 @@
             color: var(--bs-secondary);
         }
     }
+
+    div.poem
+    {
+        white-space-collapse: preserve;
+        text-wrap-mode: nowrap;
+        padding: 0 1rem 1rem 1rem;
+        font-style: italic;
+    }
 }
 
 div.t4wiki-downloads
