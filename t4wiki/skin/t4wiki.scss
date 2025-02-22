@@ -119,6 +119,12 @@
         padding: 0 1rem 1rem 1rem;
         font-style: italic;
     }
+
+    .subdued
+    {
+        font-size: 0.9em;
+        color: var(--bs-secondary-color);
+    }
 }
 
 div.t4wiki-downloads
