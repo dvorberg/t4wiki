@@ -6,7 +6,6 @@ from urllib.parse import urlencode, quote_plus
 from flask import (g, current_app as app, request, session,
                    redirect as flask_redirect)
 
-
 from t4 import sql
 from t4.web import set_url_param
 from t4.title_to_id import title_to_id
