@@ -8,9 +8,9 @@ https://prismjs.com/download.html#themes=prism&languages=markup+latex+rest+toml+
 
 code[class*="language-"],
 pre[class*="language-"] {
-	color: black;
+	//color: black;
 	background: none;
-	text-shadow: 0 1px white;
+	//text-shadow: 0 1px white;
 	font-family: var(--bs-font-monospace);
 	font-size: .95em;
 	text-align: left;
