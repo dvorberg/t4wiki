@@ -1,7 +1,0 @@
-#!/usr/bin/env python
-from t4wiki import plastic_bottle
-from flask import current_app as app
-from t4wiki.articles_blueprint import redo_all
-
-app.debug_sql = False
-redo_all()
