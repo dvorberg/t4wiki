@@ -247,6 +247,19 @@ def render_bibtex_html(library:BibTeXLibrary, lang):
     return "".join(bibliography.bibliography()[0]).replace("..", ".")
 
 
+def read_bibtex_templates():
+    here = pathlib.Path(__file__)
+    template_path = pathlib.Path(here.parent, "skin",
+                                 "article_forms", "bibtex_templates")
+
+    filenames = template_path.glob("*.bib")
+    templates = []
+    for fp in sorted(filenames, key=lambda p: p.stem):
+        templates.append(f'<pre data-type="{fp.stem}">{fp.open().read()}</pre>')
+
+    return "\n".join(templates)
+
+
 @bp.route("/bibtex_form.cgi", methods=("GET", "POST"))
 @role_required("Writer")
 @gets_parameters_from_request
@@ -322,7 +335,8 @@ def bibtex_form(id:int, bibtex_source=None):
     else:
         feedback = NullFeedback()
 
-    return template(linkman=LinkMan('bibtex', article), feedback=feedback)
+    return template(linkman=LinkMan('bibtex', article), feedback=feedback,
+                    templates=read_bibtex_templates())
 
 @bp.route("/user_info_form.cgi", methods=("GET", "POST"))
 @role_required("Writer")
