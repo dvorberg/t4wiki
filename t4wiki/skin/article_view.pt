@@ -40,6 +40,7 @@
                 tal:content="article.bibtex_key" />
         </h1>
       </div>
+
       <section class="col-lg-8" tal:condition="article">
         <article class="main" lang="${article.root_language}"
                  data-article-id="${article.id}">
@@ -47,11 +48,15 @@
              tal:condition="query.lower() != article.full_title.lower()">
             Forwarded from <a>“${query}”</a>.
           </p>
+
+          <p class="bibtex-entry"
+             tal:condition="article and article.bibtex_html"
+             tal:content="structure article.bibtex_html" />
           
           <div tal:replace="structure article.current_html">
           </div>
         </article>
-
+        
         <tal:block tal:repeat="a included">
           <article class="included" data-article-id="${a.id}"
                    tal:content="structure a.current_html">
@@ -60,11 +65,7 @@
       </section>
 
       <aside class="article-meta col-lg-4 border-start"
-             tal:condition="article">
-        <section tal:replace="nothing"> 
-          BibTeX entry
-        </section>
-        
+             tal:condition="article">        
         <section class="footnotes"> 
           <h4>Footnotes</h4>
           <ol>

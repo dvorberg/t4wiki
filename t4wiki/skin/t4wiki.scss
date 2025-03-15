@@ -1,3 +1,8 @@
+body
+{
+    --bibtex-color: var(--bs-code-color);
+}
+
 .invalid-feedback
 {
     display: block ! important;
@@ -7,11 +12,11 @@
 
 .t4wiki
 {
-    code.bibtex-key
+    code.bibtex-key, p.bibtex-entry
     {
-        
+        color: var(--bibtex-color);
     }
-
+    
     h1 code.bibtex-key
     {
         font-size: 1rem;
