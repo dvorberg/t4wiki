@@ -5,7 +5,7 @@ set search_path = wiki, public;
 DROP VIEW IF EXISTS article_for_view CASCADE;
 CREATE VIEW article_for_view AS
     SELECT id, title AS main_title, namespace, root_language, bibtex_key,
-           current_html, bibtex::TEXT, user_info::TEXT, macro_info::TEXT
+           current_html, bibtex_html, user_info::TEXT, macro_info::TEXT
       FROM article
       LEFT JOIN article_title
              ON article_title.article_id = article.id AND is_main_title;
@@ -13,7 +13,7 @@ CREATE VIEW article_for_view AS
 DROP VIEW IF EXISTS article_for_redo CASCADE;
 CREATE VIEW article_for_redo AS
     SELECT full_title, id, ignore_namespace, root_language, 
-           source, format, user_info_source, bibtex_source,
+           source, format, user_info_source, 
            ( SELECT json_agg(json_build_object('lang', language,
                                                'title', title,
                                                'namespace', namespace))
@@ -21,7 +21,14 @@ CREATE VIEW article_for_redo AS
               WHERE article_id = article.id ) AS titles
       FROM article
  LEFT JOIN article_title ON article_id = id AND is_main_title;
-           
+
+DROP VIEW IF EXISTS article_for_bibtex_redo CASCADE;
+CREATE VIEW article_for_bibtex_redo AS
+    SELECT full_title, id, bibtex_source, root_language
+      FROM article
+ LEFT JOIN article_title ON article_id = id AND is_main_title;
+
+
 DROP VIEW IF EXISTS article_for_recent_changes_list CASCADE;
 DROP VIEW IF EXISTS article_for_list CASCADE;
 CREATE VIEW article_for_list AS
