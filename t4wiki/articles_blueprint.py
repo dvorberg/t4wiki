@@ -136,10 +136,11 @@ def title_form(id:int=None,
 
                 article = model.ArticleForBibTeXRedo.select_by_primary_key(id)
 
-                library = BibTeXLibrary(io.StringIO(article.bibtex_source))
-                entry = list(library.values())[0]
-                article.update_db(bibtex_html=render_bibtex_html(
-                    library, article.root_language))
+                if article.bibtex_source:
+                    library = BibTeXLibrary(io.StringIO(article.bibtex_source))
+                    entry = list(library.values())[0]
+                    article.update_db(bibtex_html=render_bibtex_html(
+                        library, article.root_language))
             else:
                 id = insert_from_dict("wiki.article", article)
 
