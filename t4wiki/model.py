@@ -100,6 +100,9 @@ class ArticleForView(Article):
 class ArticleForRedo(Article):
     __view__ = "article_for_redo"
 
+class ArticleForBibTeXRedo(Article):
+    __view__ = "article_for_bibtex_redo"
+
 class ArticleForList(Article):
     __view__ = "article_for_list"
 
