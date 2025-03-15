@@ -237,15 +237,14 @@ def source_form(id:int, source=None):
 def render_bibtex_html(library:BibTeXLibrary, lang):
     here = op.dirname(__file__)
     bib_style = CitationStylesStyle( op.join(here, "bibliography.csl"),
-                                     locale=lang,
-                                     validate=False)
+                                     locale=lang, validate=True )
     entry = list(library.values())[0]
     key = entry["key"]
     bibliography = CitationStylesBibliography(
         bib_style, library, citeproc_formatter.html)
     bibliography.register(Citation([CitationItem(key)]))
 
-    return "".join(bibliography.bibliography()[0])
+    return "".join(bibliography.bibliography()[0]).replace("..", ".")
 
 
 @bp.route("/bibtex_form.cgi", methods=("GET", "POST"))
