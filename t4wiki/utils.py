@@ -482,7 +482,7 @@ class citextset(Hashable, MutableSet):
     def __hash__(self):
         return hash(set(self.data.keys()))
 
-enchant_dicts = {}
+available_dicts = set([lang for lang, dict in enchant.list_dicts()])
 def guess_language(query):
     """
     Will guess the natural language of “query” by spell-checking it in all
@@ -497,19 +497,14 @@ def guess_language(query):
     counts = {}
     for language in get_languages().values():
         iso = language.iso
-        if not iso in enchant_dicts:
-            try:
-                enchant_dicts[iso] = enchant.Dict(language.iso)
-            except:
-                enchant_dicts[iso] = None
+        if iso in available_dicts:
+            dict = enchant.Dict(language.iso)
 
-        dict = enchant_dicts[iso]
-
-        counts[iso] = 0
-        if dict is not None:
-            for word in words:
-                if dict.check(word):
-                    counts[iso] += 1
+            counts[iso] = 0
+            if dict is not None:
+                for word in words:
+                    if dict.check(word):
+                        counts[iso] += 1
 
     tpl = max(counts.items(), key=lambda tpl: tpl[1])
     lang, count = tpl
