@@ -297,7 +297,12 @@ def bibtex_form(id:int, bibtex_source=None):
 
         if feedback.is_valid():
             entry = list(library.values())[0]
+
             key = entry["key"]
+
+            if key == "citekey":
+                feedback.give("bibtex_source",
+                              "Not a valid citekey: “citekey”.")
 
             # Verify key uniqueness.
             result = query_one("SELECT full_title "
@@ -308,9 +313,10 @@ def bibtex_form(id:int, bibtex_source=None):
                                "   AND bibtex_key = %s"
                                " LIMIT 1",
                                ( id, key, ))
+
             if result is not None:
                 full_title, = result
-                href = f"{get_site_url()}/full_title"
+                href = f"{get_site_url()}/{full_title}"
                 feedback.give(
                     "bibtex_source",
                     xsc.Frag( f'A BibTeX entry for “{key}” already exists '
