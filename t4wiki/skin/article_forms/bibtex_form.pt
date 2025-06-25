@@ -16,6 +16,17 @@
     <metal:block metal:fill-slot="head_slot">
       <metal:block
           metal:use-macro="formhead_template.macros.syntax_highlighting" />
+
+      <style>
+        .bibtex-templates { display: none; visibility: hidden; }
+        .template-buttons button {
+            padding: 0 1rem 0 0;
+            text-decoration: none;
+        }        
+      </style>
+
+      <script type="module"
+              src="${skin.href('article_forms/bibtex_form.mjs')}"></script>
     </metal:block>
   </head>
   <body>
@@ -38,6 +49,9 @@
             Source
           </label>
 
+          <div class="template-buttons"></div>
+          <div class="bibtex-templates" tal:content="structure templates" />
+          
           <div tal:replace="structure fb.html" />
           
           <div class="source-editor">

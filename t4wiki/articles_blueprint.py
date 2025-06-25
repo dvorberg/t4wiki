@@ -10,7 +10,10 @@ from werkzeug.exceptions import Unauthorized
 from ll.xist import xsc
 from ll.xist.ns import html
 
-import bibtexparser.bparser
+from citeproc.source.bibtex import BibTeX as BibTeXLibrary
+from citeproc import CitationStylesStyle, CitationStylesBibliography
+from citeproc import formatter as citeproc_formatter
+from citeproc import Citation, CitationItem
 
 from t4 import sql
 from t4.typography import normalize_whitespace
@@ -130,6 +133,14 @@ def title_form(id:int=None,
                         "mtime": sql.expression("NOW()"), }
             if id:
                 model.Article.update_db(id, **article)
+
+                article = model.ArticleForBibTeXRedo.select_by_primary_key(id)
+
+                if article.bibtex_source:
+                    library = BibTeXLibrary(io.StringIO(article.bibtex_source))
+                    entry = list(library.values())[0]
+                    article.update_db(bibtex_html=render_bibtex_html(
+                        library, article.root_language))
             else:
                 id = insert_from_dict("wiki.article", article)
 
@@ -224,6 +235,32 @@ def source_form(id:int, source=None):
     return template(linkman=LinkMan('source', article), feedback=feedback)
 
 
+def render_bibtex_html(library:BibTeXLibrary, lang):
+    here = op.dirname(__file__)
+    bib_style = CitationStylesStyle( op.join(here, "bibliography.csl"),
+                                     locale=lang, validate=True )
+    entry = list(library.values())[0]
+    key = entry["key"]
+    bibliography = CitationStylesBibliography(
+        bib_style, library, citeproc_formatter.html)
+    bibliography.register(Citation([CitationItem(key)]))
+
+    return "".join(bibliography.bibliography()[0]).replace("..", ".")
+
+
+def read_bibtex_templates():
+    here = pathlib.Path(__file__)
+    template_path = pathlib.Path(here.parent, "skin",
+                                 "article_forms", "bibtex_templates")
+
+    filenames = template_path.glob("*.bib")
+    templates = []
+    for fp in sorted(filenames, key=lambda p: p.stem):
+        templates.append(f'<pre data-type="{fp.stem}">{fp.open().read()}</pre>')
+
+    return "\n".join(templates)
+
+
 @bp.route("/bibtex_form.cgi", methods=("GET", "POST"))
 @role_required("Writer")
 @gets_parameters_from_request
@@ -237,23 +274,35 @@ def bibtex_form(id:int, bibtex_source=None):
         if bibtex_source.strip() == "":
             article.update_db( bibtex_source="",
                                bibtex_key=None,
-                               bibtex=None,
-                               mtime=sql.expression("NOW()"), )
+                               bibjson=None,
+                               bibtex_html=None )
 
             commit()
             return redirect(article.href)
 
-        parser = bibtexparser.bparser.BibTexParser()
-        library = parser.parse(bibtex_source)
-        if len(library.entries) < 1:
+        try:
+            library = BibTeXLibrary(io.StringIO(bibtex_source))
+
+            if len(library) < 1:
+                feedback.give("bibtex_source",
+                              "No valid BibTeX entry found in source.")
+            elif len(library) > 1:
+                feedback.give("bibtex_source",
+                              "You can’t enter more than one entry here.")
+
+        except Exception as ex:
             feedback.give("bibtex_source",
-                          "No valid BibTeX entry found in source.")
-        elif len(library.entries) > 1:
-            feedback.give("bibtex_source",
-                          "You can’t enter more than one entry here.")
-        else:
-            entry = library.entries[0]
-            key = entry["ID"]
+                          f"Error parsing the BibTeX "
+                          f"within citeproc library: ‘{repr(ex)}’.")
+
+        if feedback.is_valid():
+            entry = list(library.values())[0]
+
+            key = entry["key"]
+
+            if key == "citekey":
+                feedback.give("bibtex_source",
+                              "Not a valid citekey: “citekey”.")
 
             # Verify key uniqueness.
             result = query_one("SELECT full_title "
@@ -264,9 +313,10 @@ def bibtex_form(id:int, bibtex_source=None):
                                "   AND bibtex_key = %s"
                                " LIMIT 1",
                                ( id, key, ))
+
             if result is not None:
                 full_title, = result
-                href = f"{get_site_url()}/full_title"
+                href = f"{get_site_url()}/{full_title}"
                 feedback.give(
                     "bibtex_source",
                     xsc.Frag( f'A BibTeX entry for “{key}” already exists '
@@ -274,17 +324,26 @@ def bibtex_form(id:int, bibtex_source=None):
                               html.a(full_title, href=href, target="_new"),
                               "”."))
 
+            try:
+                bibtex_html=render_bibtex_html(library, article.root_language)
+            except Exception as ex:
+                feedback.give(
+                    "bibtex_source",
+                    f"Error parsing or rendering the BibTeX "
+                    f"within citeproc library: {str(ex)}")
+
         if feedback.is_valid():
             article.update_db( bibtex_source=bibtex_source,
                                bibtex_key=key,
-                               bibtex=sql.jsonb_literal(entry),
-                               mtime=sql.expression("NOW()"), )
+                               bibtex_html=bibtex_html,
+                               bibjson=sql.jsonb_literal(entry) )
             commit()
             return redirect(article.href)
     else:
         feedback = NullFeedback()
 
-    return template(linkman=LinkMan('bibtex', article), feedback=feedback)
+    return template(linkman=LinkMan('bibtex', article), feedback=feedback,
+                    templates=read_bibtex_templates())
 
 @bp.route("/user_info_form.cgi", methods=("GET", "POST"))
 @role_required("Writer")
@@ -587,7 +646,7 @@ def all():
     return template(title=title, articles=articles,
                     orderby=orderby, filter=filter, pagination=pagination)
 
-def redo_all():
+def redo_html():
     for article in model.ArticleForRedo.select(sql.orderby("full_title")):
         print(article.full_title, end="")
         sys.stdout.flush()
@@ -608,24 +667,35 @@ def redo_all():
         update_links_for(article.id, links)
         update_includes_for(article.id, includes)
 
-        # BibTeX
-        if article.bibtex_source:
-            parser = bibtexparser.bparser.BibTexParser()
-            library = parser.parse(article.bibtex_source)
-            entry = library.entries[0]
-            bibtex_entry = library.entries[0]
-            bibtex_key = entry["ID"]
-        else:
-            bibtex_entry = None
-            bibtex_key = None
-
         # Update the database.
         article.update_db(user_info=sql.jsonb_literal(user_info),
                           current_html=html,
                           tsvector=sql.expression(tsearch),
-                          macro_info=sql.jsonb_literal(macro_info),
-                          bibtex=sql.jsonb_literal(bibtex_entry),
-                          bibtex_key=bibtex_key)
+                          macro_info=sql.jsonb_literal(macro_info))
         print()
         sys.stdout.flush()
+    commit()
+
+def redo_bibtex():
+    articles = model.ArticleForBibTeXRedo.select(
+        sql.where("bibtex_source IS NOT NULL"), sql.orderby("full_title"))
+
+    for article in articles:
+        print(article.full_title, end="")
+        sys.stdout.flush()
+
+        try:
+            library = BibTeXLibrary(io.StringIO(article.bibtex_source))
+            entry = list(library.values())[0]
+            html = render_bibtex_html(library, article.root_language)
+        except Exception as ex:
+            print(" ", ex)
+            sys.exit(255)
+        else:
+            article.update_db(bibtex_key=entry["key"],
+                              bibtex_html=html,
+                              bibjson=sql.jsonb_literal(entry))
+        print()
+        sys.stdout.flush()
+
     commit()

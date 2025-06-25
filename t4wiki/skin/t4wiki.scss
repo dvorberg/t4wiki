@@ -1,3 +1,8 @@
+body
+{
+    --bibtex-color: var(--bs-code-color);
+}
+
 .invalid-feedback
 {
     display: block ! important;
@@ -7,11 +12,11 @@
 
 .t4wiki
 {
-    code.bibtex-key
+    code.bibtex-key, p.bibtex-entry
     {
-        
+        color: var(--bibtex-color);
     }
-
+    
     h1 code.bibtex-key
     {
         font-size: 1rem;
@@ -110,6 +115,20 @@
             text-decoration: none;
             color: var(--bs-secondary);
         }
+    }
+
+    div.poem
+    {
+        white-space-collapse: preserve;
+        text-wrap-mode: nowrap;
+        padding: 0 1rem 1rem 1rem;
+        font-style: italic;
+    }
+
+    .subdued
+    {
+        font-size: 0.9em;
+        color: var(--bs-secondary-color);
     }
 }
 

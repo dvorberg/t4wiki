@@ -80,6 +80,8 @@ export function init_editor(node) {
 		Prism.highlightElement(node, false);
 	}, { addClosing: false, catchTab: false });
 
+	viewer.jar = jar;
+	
 	jar.onUpdate(code => {
 		textarea.value = viewer.textContent;
 	});
