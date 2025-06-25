@@ -1,13 +1,21 @@
-from flask import current_app as app
+import werkzeug
+
 from tinymarkup.context import Context
+from tinymarkup.macro import MacroLibrary
+from tinymarkup.language import Languages
 
 from ll.xist.ns import html
 
 from .utils import citextset, get_languages
 
 class Context(Context):
-    def __init__(self, macro_library, user_info):
-        super().__init__(macro_library, get_languages())
+    def __init__(self, macro_library=MacroLibrary(), user_info=None):
+        try:
+            languages = get_languages()
+        except RuntimeError: # Raised by Werkzeug if outside app context.
+            languages = Languages()
+
+        super().__init__(macro_library, languages)
         self.user_info = user_info
         self.article_links = citextset()
         self.article_includes = citextset()
