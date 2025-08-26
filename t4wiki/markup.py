@@ -8,6 +8,7 @@ from t4.typography import normalize_whitespace
 
 from tinymarkup.language import Language
 from tinymarkup.compiler import CompilerDuplexer
+from tinymarkup.writer import TSearchWriter
 
 from . import model
 from . import html_markup
@@ -103,6 +104,23 @@ class Title(NamedTuple):
                  and self.title.lower() == other.title.lower()
                  and low(self.namespace) == low(other.namespace))
 
+    def to_tsvector(self, default_language, weight="A"):
+        """
+        Return a string containing an SQL expressiong for a tsvector
+        to store this title in the database.
+        """
+        if type(default_language) is str:
+            default_language = get_languages().by_iso(default_language)
+
+        output = io.StringIO()
+        writer = TSearchWriter(output, self.lang or default_language)
+        writer.write(self.title, weight=weight)
+        if self.namespace:
+            writer.write(self.namespace, weight=weight)
+        writer.end_document()
+
+        return output.getvalue()
+
 def normalize_title(title, ignore_namespace=False):
     return parse_title(title, ignore_namespace).normalized()
 
@@ -156,7 +174,7 @@ class CompiledArticle(NamedTuple):
     article_includes: List[str]
     macro_info: dict
 
-def compile_article(titles, source, format,
+def compile_article(source, format,
                     root_language, user_info) -> CompiledArticle:
     """
     Since for HTML the input language and one of the target languages
@@ -164,12 +182,12 @@ def compile_article(titles, source, format,
     """
     if format == "html":
         return extract_article_from_html(
-            titles, source, format, root_language, user_info)
+            source, format, root_language, user_info)
     else:
         return compile_article_from_markup(
-            titles, source, format, root_language, user_info)
+            source, format, root_language, user_info)
 
-def compile_article_from_markup(titles, source, format,
+def compile_article_from_markup(source, format,
                                 root_language, user_info) -> CompiledArticle:
     """
     Returns a CompiledArticle named tuple created from the input
@@ -193,22 +211,22 @@ def compile_article_from_markup(titles, source, format,
     html_compiler = HTMLCompiler(context, html_out)
     tsearch_compiler = TSearchCompiler(context, tsearch_out)
 
-    # Initialize the tsearch output by adding the titles
-    # weightes "A".
-    for title in titles:
-        lang, title, namespace = Title.parse(title, ignore_namespace=True)
-        tsearch_compiler.writer.write(title, lang or root_language, "A")
-
     duplexer = CompilerDuplexer(html_compiler, tsearch_compiler)
     duplexer.duplex(Parser(), source)
 
+    tsearch = tsearch_out.getvalue()
+
+    if not tsearch:
+        # We can’t have a NULL value here.
+        tsearch = "to_tsvector('simple', '')"
+
     return CompiledArticle(  html_out.getvalue(),
-                             tsearch_out.getvalue(),
+                             tsearch,
                              context.article_links,
                              context.article_includes,
                              context.macro_info, )
 
-def extract_article_from_html(titles, source, format,
+def extract_article_from_html(source, format,
                               root_language, user_info) -> CompiledArticle:
     """
     Input HTML is tidied and the contents of the <body>-tag are returned.
@@ -225,6 +243,7 @@ def extract_article_from_html(titles, source, format,
 
 
 def update_titles_for(id, titles, root_language):
+    tsvectors = []
     execute("DELETE FROM wiki.article_title WHERE article_id = %i" % id)
     for index, title in enumerate(titles):
         insert_from_dict( "wiki.article_title",
@@ -235,6 +254,10 @@ def update_titles_for(id, titles, root_language):
                               "language": (title.lang or root_language).iso,
                               "is_main_title": bool(index == 0)
                           }, retrieve_id=False)
+        tsvectors.append(title.to_tsvector(root_language))
+
+    tsvector = "||".join(tsvectors)
+    model.Article.update_db(id, titles_tsvector=sql.expression(tsvector))
 
 def update_links_for(id, links):
     execute("DELETE FROM wiki.article_link WHERE article_id = %i" % id)
@@ -249,65 +272,6 @@ def update_includes_for(id, includes):
         insert_from_dict( "wiki.article_include",
                           { "article_id": id, "wants_to_include": include },
                           retrieve_id=False)
-
-
-def store_article(id, titles, ignore_namespace,
-                  root_language, source, format):
-    """
-    INSERT or UPDATE an article in the database and all the
-    depending tables.
-    """
-    if len(titles) < 1:
-        raise ValueError("Article must have at least one title.")
-
-    titles = [ Title.parse(title, ignore_namespace) for title in titles ]
-
-    # Verify that no other articles claim any of the titles we want to
-    # use.
-    result = article_ids_by_titles(titles)
-    foreign = []
-    for article_title in result:
-        if id is None or article_title.article_id != id:
-            foreign.append(article_title)
-
-    if len(foreign) > 0:
-        raise TitleUnavailable("An article with that title or alias "
-                               "already exists.", foreign)
-
-    if id is None:
-        user_info = {}
-    else:
-        user_info = get_user_info(id)
-
-    html, tsearch, links, includes, macro_info = compile_article(
-        titles, source, format, root_language, user_info)
-
-    article = { "ignore_namespace": ignore_namespace,
-                "root_language": root_language.iso,
-                "source": source,
-                "format": format,
-                "current_html": html,
-                "macro_info": sql.json_literal(macro_info),
-                "tsvector": sql.expression(tsearch) }
-
-    # Article contents
-    if id is None:
-        id = insert_from_dict("wiki.article", article)
-    else:
-        execute(sql.update("wiki.article",
-                           sql.where("id = ", int(id)),
-                           article))
-
-    # Titles
-    update_titles_for(id, titles, root_language)
-
-    # Links
-    update_links_for(id, links)
-
-    # Includes
-    update_includes_for(id, includes)
-
-    return id
 
 def get_user_info(id):
     info, = query_one("SELECT user_info FROM wiki.article "
