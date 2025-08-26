@@ -1,5 +1,5 @@
 import os.path as op, re, string, datetime, io, json, time, tomllib, pathlib
-import sys, subprocess, urllib.parse, mimetypes, unicodedata
+import sys, subprocess, urllib.parse, mimetypes, unicodedata, traceback
 from PIL import Image
 
 from flask import (current_app as app, url_for, send_file,
@@ -25,7 +25,7 @@ from tinymarkup.exceptions import MarkupError
 from tinymarkup.utils import html_start_tag
 
 from .ptutils import test
-from .utils import (gets_parameters_from_request, guess_language, get_languages,
+from .utils import (gets_parameters_from_request, get_languages,
                     get_site_url, rget,
                     OrderByHandler, PaginationHandler, FilterFormHandler)
 from .form_feedback import FormFeedback, NullFeedback
@@ -35,6 +35,7 @@ from .markup import (Title, tools_by_format, compile_article,
                      update_titles_for, update_links_for, update_includes_for,
                      normalize_source, )
 from .authentication import login_required, role_required
+from . import html_markup
 
 bp = Blueprint("articles", __name__, url_prefix="/articles")
 
@@ -124,7 +125,6 @@ def title_form(id:int=None,
         # before writing it to the db.
         tools_by_format(format)
 
-
         if feedback.is_valid():
             # Update the article.
             article = { "ignore_namespace": ignore_namespace,
@@ -133,14 +133,6 @@ def title_form(id:int=None,
                         "mtime": sql.expression("NOW()"), }
             if id:
                 model.Article.update_db(id, **article)
-
-                article = model.ArticleForBibTeXRedo.select_by_primary_key(id)
-
-                if article.bibtex_source:
-                    library = BibTeXLibrary(io.StringIO(article.bibtex_source))
-                    entry = list(library.values())[0]
-                    article.update_db(bibtex_html=render_bibtex_html(
-                        library, article.root_language))
             else:
                 id = insert_from_dict("wiki.article", article)
 
@@ -204,7 +196,6 @@ def source_form(id:int, source=None):
 
         try:
             html, tsearch, links, includes, macro_info = compile_article(
-                titles,
                 source,
                 article.format,
                 get_languages().by_iso(article.root_language),
@@ -219,7 +210,7 @@ def source_form(id:int, source=None):
 
             article.update_db(source=source,
                               current_html=html,
-                              tsvector=sql.expression(tsearch),
+                              main_tsvector=sql.expression(tsearch),
                               mtime=sql.expression("NOW()"),
                               macro_info=sql.json_literal(macro_info))
 
@@ -260,6 +251,26 @@ def read_bibtex_templates():
 
     return "\n".join(templates)
 
+comment_re = re.compile(r"%.*$", re.MULTILINE)
+key_re = re.compile(r"@\w+\{(\w+),")
+def find_bibtex_key(source):
+    """
+    The citeproc BiBTeX code converts keys lower case. That makes
+    sense.  I’d like to retain case on my keys, because being a human
+    and not a computer I find them easier to remember that way.
+    """
+    source = comment_re.sub("", source)
+    match = key_re.search(source)
+    if match is None:
+        raise KeyError("No BibTeX key in %s" % repr(source))
+    else:
+        return match.group(1)
+
+def bibtex_tsvector(language, bibtex_html):
+    frag = html_markup.dom_tree(bibtex_html)
+    tsvector = html_markup.tsearch(frag, language, "B")
+    return f"setweight({tsvector}, 'B')"
+
 
 @bp.route("/bibtex_form.cgi", methods=("GET", "POST"))
 @role_required("Writer")
@@ -291,6 +302,7 @@ def bibtex_form(id:int, bibtex_source=None):
                               "You can’t enter more than one entry here.")
 
         except Exception as ex:
+            traceback.print_exception(ex)
             feedback.give("bibtex_source",
                           f"Error parsing the BibTeX "
                           f"within citeproc library: ‘{repr(ex)}’.")
@@ -327,15 +339,20 @@ def bibtex_form(id:int, bibtex_source=None):
             try:
                 bibtex_html=render_bibtex_html(library, article.root_language)
             except Exception as ex:
+                traceback.print_exception(ex)
+
                 feedback.give(
                     "bibtex_source",
                     f"Error parsing or rendering the BibTeX "
                     f"within citeproc library: {str(ex)}")
 
         if feedback.is_valid():
+            tsvector = bibtex_tsvector(article.root_language, bibtex_html)
+
             article.update_db( bibtex_source=bibtex_source,
-                               bibtex_key=key,
+                               bibtex_key=find_bibtex_key(bibtex_source),
                                bibtex_html=bibtex_html,
+                               bibtex_tsvector=sql.expression(tsvector),
                                bibjson=sql.jsonb_literal(entry) )
             commit()
             return redirect(article.href)
@@ -650,28 +667,35 @@ def redo_html():
     for article in model.ArticleForRedo.select(sql.orderby("full_title")):
         print(article.full_title, end="")
         sys.stdout.flush()
+
+        root_language = get_languages().by_iso(article.root_language)
+
         user_info = tomllib.loads(article.user_info_source)
 
         titles = [ Title(get_languages().by_iso(d["lang"]),
-                         d["title"],
-                         d["namespace"]) for d in article.titles ]
+                         d["title"], d["namespace"])
+                   for d in article.titles ]
 
         # Compile the source to HTML and tsearch.
         html, tsearch, links, includes, macro_info = compile_article(
-            titles,
             article.source,
             article.format,
-            get_languages().by_iso(article.root_language),
+            root_language,
             user_info)
 
         update_links_for(article.id, links)
         update_includes_for(article.id, includes)
 
+        # Get the titles from the database to update their tsvector.
+        titles_tsvector = "||".join([title.to_tsvector(root_language)
+                                     for title in titles])
+
         # Update the database.
         article.update_db(user_info=sql.jsonb_literal(user_info),
                           current_html=html,
-                          tsvector=sql.expression(tsearch),
-                          macro_info=sql.jsonb_literal(macro_info))
+                          main_tsvector=sql.expression(tsearch),
+                          macro_info=sql.jsonb_literal(macro_info),
+                          titles_tsvector=sql.expression(titles_tsvector))
         print()
         sys.stdout.flush()
     commit()
@@ -688,13 +712,17 @@ def redo_bibtex():
             library = BibTeXLibrary(io.StringIO(article.bibtex_source))
             entry = list(library.values())[0]
             html = render_bibtex_html(library, article.root_language)
+            tsvector = bibtex_tsvector(article.root_language, html)
         except Exception as ex:
             print(" ", ex)
-            sys.exit(255)
+            print()
+            raise
+            #sys.exit(255)
         else:
-            article.update_db(bibtex_key=entry["key"],
-                              bibtex_html=html,
-                              bibjson=sql.jsonb_literal(entry))
+            article.update_db( bibtex_key=entry["key"],
+                               bibtex_html=html,
+                               bibjson=sql.jsonb_literal(entry),
+                               bibtex_tsvector=sql.expression(tsvector) )
         print()
         sys.stdout.flush()
 
