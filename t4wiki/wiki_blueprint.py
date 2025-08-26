@@ -16,7 +16,7 @@ from iridophore.flask import SkinnedBlueprint as Blueprint
 from tinymarkup.utils import html_start_tag
 
 from .context import get_languages
-from .utils import guess_language, gets_parameters_from_request, rget
+from .utils import gets_parameters_from_request, rget
 from .authentication import login_required, role_required, get_user
 from . import markup
 from . import model
@@ -101,17 +101,21 @@ CREATE TEMPORARY VIEW search_result AS
 
 def full_text_search(query, *clauses, lang=None):
     if lang is None:
-        lang = guess_language(query)
-
-    if lang is None:
-        config = "simple"
+        configs = [ lang.tsearch_configuration
+                    for lang in get_languages().values() ]
+        configs.append("simple")
     else:
-        config = lang.tsearch_configuration
+        configs = [ lang.tsearch_configuration, ]
 
     cc = db.cursor()
-    command = create_query_view.format(
-        "websearch_to_tsquery(%(tsearch_config)s, %(query)s)")
-    cc.execute(command, { "query": query, "tsearch_config": config })
+    commands = []
+    params = []
+
+    for config in configs:
+        commands.append(f"websearch_to_tsquery('{config}', %(query)s)")
+
+    command = create_query_view.format("||".join(commands))
+    cc.execute(command, { "query": query, })
 
     return run_query(cc, *clauses)
 
@@ -166,6 +170,10 @@ def article_view(article_title=None):
         article_title = app.config["PORTAL_ARTICLES"][0]
 
     result = model.Article.id_by_title(article_title)
+
+    if result is None and not "(" in article_title:
+        result = model.Article.id_by_bibtex_key(article_title)
+
     if result is None or "search" in request.args:
         # No article found with that title. Present a search result only.
 
