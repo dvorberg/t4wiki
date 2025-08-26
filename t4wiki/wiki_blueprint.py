@@ -180,8 +180,14 @@ def article_view(article_title=None):
         title = markup.Title.parse(article_title)
         if title.namespace:
             query_namespace = title.namespace
-            where = sql.where("namespace = ",
-                              sql.string_literal(query_namespace))
+            #where = sql.where("namespace = ",
+            #                  sql.string_literal(query_namespace))
+            where = sql.where(
+                sql.string_literal(query_namespace),
+                " IN (SELECT namespace FROM article_title "
+                "      WHERE article_title.article_id = "
+                "search_result.article_id)")
+
         else:
             where = None
             query_namespace = ""
