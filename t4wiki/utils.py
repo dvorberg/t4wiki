@@ -481,35 +481,3 @@ class citextset(Hashable, MutableSet):
 
     def __hash__(self):
         return hash(set(self.data.keys()))
-
-available_dicts = set([lang for lang, dict in enchant.list_dicts()])
-def guess_language(query):
-    """
-    Will guess the natural language of “query” by spell-checking it in all
-    languages that are supported by both the system and the enchant python
-    library (and its underlaying spell checking tools). The language that
-    has the most of the qords in “query” in it wins. If no language has
-    any of these words in it (they are probarbly proper names), None will
-    be returned.
-    """
-    words = sql.whitespace_re.split(query)
-
-    counts = {}
-    for language in get_languages().values():
-        iso = language.iso
-        if iso in available_dicts:
-            dict = enchant.Dict(language.iso)
-
-            counts[iso] = 0
-            if dict is not None:
-                for word in words:
-                    if dict.check(word):
-                        counts[iso] += 1
-
-    tpl = max(counts.items(), key=lambda tpl: tpl[1])
-    lang, count = tpl
-
-    if count == 0:
-        return None
-    else:
-        return get_languages().by_iso(lang)
