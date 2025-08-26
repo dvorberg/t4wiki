@@ -39,10 +39,17 @@ def weight(element):
 
 word_re = re.compile("\w+")
 
-def tsearch(dom_tree:xsc.Frag, root_language) -> str:
+def tsearch(dom_tree:xsc.Frag, root_language, default_weight=None) -> str:
     languages = get_languages()
     output = StringIO()
+
+    if type(root_language) is str:
+        root_language = languages.by_iso(root_language)
+
     writer = TSearchWriter(output, root_language)
+
+    if default_weight:
+        writer.push_weight(default_weight)
 
     def walk(node):
         if isinstance(node, xsc.Text):
