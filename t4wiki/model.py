@@ -43,6 +43,13 @@ class Article(dbobject, has_title_and_namespace):
                                      ("wiki.article_title",),
                                      ArticleTitle.title_where(title), ))
 
+    @staticmethod
+    def id_by_bibtex_key(key):
+        return query_one(sql.select( ("id",),
+                                     ("wiki.article",),
+                                     sql.where("bibtex_key = ",
+                                               sql.string_literal(key)) ))
+
     def form_url(self, form):
         return f"{get_site_url()}/articles/{form}_form.cgi?id={self.id}"
 
