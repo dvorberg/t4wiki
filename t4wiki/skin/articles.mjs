@@ -350,20 +350,23 @@ class ArticleManager
         for(var a = 0; a < h_elements.length; a++)
         {
             var h_element = h_elements[a];
-            
-            var level = Heading.h_element_level(h_element);
-            if ( level <= current.level )
-            {
-                while (level < current.level)
-                {
-                    current = current.parent;
-                }
-                current = current.parent.append(h_element)
-            }
-            else if (level > current.level)
-            {
-                current = current.append(h_element);
-            }
+
+			if ( ! h_element.classList.contains("downloads"))
+			{
+				var level = Heading.h_element_level(h_element);
+				if ( level <= current.level )
+				{
+					while (level < current.level)
+					{
+						current = current.parent;
+					}
+					current = current.parent.append(h_element)
+				}
+				else if (level > current.level)
+				{
+					current = current.append(h_element);
+				}
+			}
         };
 
         // Remove redundant first entries.
@@ -553,7 +556,7 @@ class FileManager
 			const cardgroup = html.div(
 				{class: "row row-cols-2 row-cols-xl-3 g-2 mb-4"});
 			
-			div.append(html.h4("Downloads"),
+			div.append(html.h4("Downloads", {class: "downloads"}),
 					   cardgroup);
 			
 			for (const filename in fileinfos)
@@ -575,7 +578,8 @@ class FileManager
 					                            ).split(".").slice(-1)[0],
 						  title = fileinfo.t || fileinfo.n,
 						  body = html.div(
-							  html.h5(title, filename),
+							  html.h5(title, filename,
+									  {class: "downloads"}),
 							  html.p(html.span(fileinfo.d,
 											   {class: "text-muted"}),
 									 " ",
