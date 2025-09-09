@@ -29,6 +29,9 @@ class Greek(LanguageMacro):
 class Spanish(LanguageMacro):
     name = "es"
 
+class French(LanguageMacro):
+    name = "fr"
+
 class NamedLanguageMacro(Macro):
     name = "lang"
 
