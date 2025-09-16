@@ -257,7 +257,7 @@ def find_bibtex_key(source):
     """
     The citeproc BiBTeX code converts keys lower case. That makes
     sense.  I’d like to retain case on my keys, because being a human
-    and not a computer I find them easier to remember that way.
+    and not a computer, I find them easier to remember that way.
     """
     source = comment_re.sub("", source)
     match = key_re.search(source)
@@ -711,6 +711,7 @@ def redo_bibtex():
         try:
             library = BibTeXLibrary(io.StringIO(article.bibtex_source))
             entry = list(library.values())[0]
+            key = find_bibtex_key(article.bibtex_source)
             html = render_bibtex_html(library, article.root_language)
             tsvector = bibtex_tsvector(article.root_language, html)
         except Exception as ex:
@@ -719,7 +720,7 @@ def redo_bibtex():
             raise
             #sys.exit(255)
         else:
-            article.update_db( bibtex_key=entry["key"],
+            article.update_db( bibtex_key=key,
                                bibtex_html=html,
                                bibjson=sql.jsonb_literal(entry),
                                bibtex_tsvector=sql.expression(tsvector) )
