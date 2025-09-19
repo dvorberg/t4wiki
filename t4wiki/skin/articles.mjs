@@ -245,6 +245,8 @@ class ArticleManager
                 mark.setAttribute("href", "#" + id);
                 mark.appendChild(document.createTextNode(counter));
                 footnote.replaceWith(mark);
+
+				counter++;
             }
         }
     }
