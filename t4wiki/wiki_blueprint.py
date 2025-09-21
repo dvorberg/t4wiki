@@ -111,7 +111,7 @@ def full_text_search(query, *clauses, lang=None):
     commands = []
     params = []
 
-    for config in configs:
+    for config in set(configs):
         commands.append(f"websearch_to_tsquery('{config}', %(query)s)")
 
     command = create_query_view.format("||".join(commands))
