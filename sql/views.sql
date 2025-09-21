@@ -53,6 +53,7 @@ LEFT JOIN article_title
 DROP VIEW IF EXISTS article_link_ranks CASCADE;
 CREATE VIEW article_link_ranks AS 
     SELECT article_link.article_id,
+           target_cmpid AS cmpid,
            target_title AS target,
            full_title,
            CASE WHEN source_article.namespace IS NOT NULL
@@ -64,15 +65,15 @@ CREATE VIEW article_link_ranks AS
                  AND article_title.namespace IS NOT NULL
                 THEN 3
 
-                WHEN article_title.full_title = target_title
+                WHEN article_title.full_cmpid = target_cmpid
                 THEN 2
 
                 ELSE 1
            END AS rank
       FROM article_link
       LEFT JOIN article_title
-             ON article_title.title = target_title
-                 OR article_title.full_title = target_title
+             ON article_title.cmpid = target_cmpid
+                 OR article_title.full_cmpid = target_cmpid
       LEFT JOIN article_namespace AS source_article
              ON source_article.article_id = article_link.article_id;
 
@@ -82,7 +83,7 @@ CREATE VIEW article_link_resolved AS
       FROM article_link_ranks
      WHERE rank = ( SELECT MAX(rank) FROM article_link_ranks AS inner_
                      WHERE inner_.article_id = article_link_ranks.article_id
-                       AND inner_.target = article_link_ranks.target );
+                       AND inner_.cmpid = article_link_ranks.cmpid );
 
 DROP VIEW IF EXISTS article_teaser_on_resolved CASCADE;
 CREATE VIEW article_teaser_on_resolved AS
