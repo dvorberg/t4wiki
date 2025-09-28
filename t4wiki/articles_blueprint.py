@@ -25,8 +25,8 @@ from tinymarkup.exceptions import MarkupError
 from tinymarkup.utils import html_start_tag
 
 from .ptutils import test
-from .utils import (gets_parameters_from_request, get_languages,
-                    get_site_url, rget,
+from .utils import (gets_parameters_from_request, get_site_url, rget,
+                    get_languages, get_article_root_languages,
                     OrderByHandler, PaginationHandler, FilterFormHandler)
 from .form_feedback import FormFeedback, NullFeedback
 from . import model
@@ -163,9 +163,7 @@ def title_form(id:int=None,
                 return t.language + ":" + t.full_title
         aliases = "\n".join([ title_string(t) for t in titles ])
 
-    languages = [ l for l in get_languages().values()
-                  if l.ui_name is not None ]
-    languages = sorted(languages, key=lambda l: l.ui_name or "")
+    languages = get_article_root_languages()
 
     if id:
         delete_link = f'{url_for("articles.delete")}?id={id}'
