@@ -19,6 +19,13 @@ import enchant
 def get_languages():
     return app.config["LANGUAGES"]
 
+def get_article_root_languages():
+    isos = app.config.get("ARTICLE_ROOT_LANGUAGE_ISOS",
+                          tuple(get_languages().keys()))
+    languages = get_languages()
+    return [ languages.by_iso(iso) for iso in isos ]
+
+
 def title2path(title):
     return title.replace("?", "%3f")
 
