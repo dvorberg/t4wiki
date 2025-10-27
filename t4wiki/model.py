@@ -190,7 +190,7 @@ class Upload(dbobject):
             if self.ext == ".png":
                 self._preview_ext = ".png"
             else:
-                self._preview_ext = ".jpg"
+                self._preview_ext = ".webp"
 
         return self._preview_ext
 

@@ -15,11 +15,14 @@ ALTER TEXT SEARCH CONFIGURATION english
                       word, hword, hword_part
     WITH english_hunspell, english_stem; -- pg_catalog.simple;
 
+CREATE TEXT SEARCH DICTIONARY german_plurals
+   (template=synonym, synonyms='german_plurals');
 
-ALTER TEXT SEARCH CONFIGURATION  german
+ALTER TEXT SEARCH CONFIGURATION german
     ALTER MAPPING FOR asciiword, asciihword, hword_asciipart,
                       word, hword, hword_part
-    WITH german_hunspell, pg_catalog.german_stem; -- pg_catalog.simple;
+    WITH german_plurals, german_hunspell, pg_catalog.german_stem, unaccent;
+    -- pg_catalog.simple;
 
 
 set search_path = public;

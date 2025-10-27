@@ -123,7 +123,7 @@ CREATE VIEW upload_info AS
           is_download, sortrank, width, height, ctime, slug,
           substring(filename, '(\.[^\.]+$)') AS ext,
           CASE WHEN  substring(filename, '(\.[^\.]+$)') = '.png' THEN '.png'
-               ELSE '.jpg'
+               ELSE '.webp'
           END AS preview_ext,
           length(data) AS size
      FROM upload;

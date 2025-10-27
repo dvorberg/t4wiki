@@ -401,7 +401,7 @@ def create_previews_for(upload:model.Upload):
         for pp in preview_dir.glob("*"):
             pp.unlink()
 
-    if upload.ext in { ".jpg", ".png", ".pdf" }:
+    if upload.ext in { ".jpg", ".png", ".pdf", ".webp" }:
         create_image_previews_for(preview_dir, upload)
     else:
         # Create default grey images.
@@ -428,8 +428,8 @@ def create_image_previews_for(preview_dir, upload):
     for size in model.Upload.preview_sizes:
         ext = upload.ext
 
-        if ext == ".pdf":
-            ext = ".jpg"
+        if ext in (".pdf", ".jpg",):
+            ext = ".webp"
 
         outfilepath = pathlib.Path(preview_dir,
                                    "preview%i%s" % (size, ext))
