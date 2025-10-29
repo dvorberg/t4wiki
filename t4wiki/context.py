@@ -27,4 +27,4 @@ class Context(Context):
         document_name = target.split("#", 1)[0]
         self.article_links.add(document_name)
 
-        return super().html_link_element(target, text)
+        return html.a(text, href=document_name, class_="t4wiki-link")
