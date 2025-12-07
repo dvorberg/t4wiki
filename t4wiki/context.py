@@ -22,6 +22,9 @@ class Context(Context):
         self.macro_info = {}
 
     def html_link_element(self, target, text):
+        if not text:
+            text = target
+
         # Remove the anchor when adding the linked document
         # to the internal list.
         document_name = target.split("#", 1)[0]
