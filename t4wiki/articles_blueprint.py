@@ -21,7 +21,7 @@ from t4.passwords import slug
 
 from iridophore.flask import SkinnedBlueprint as Blueprint
 
-from tinymarkup.exceptions import MarkupError
+from tinymarkup.exceptions import MarkupError, UnknownLanguage
 from tinymarkup.utils import html_start_tag
 
 from .ptutils import test
@@ -88,12 +88,27 @@ def title_form(id:int=None,
 
         feedback.validate_not_empty("full_title")
 
-        main_title = Title.parse(full_title, ignore_namespace)
+        try:
+            main_title = Title.parse(full_title, ignore_namespace)
+        except UnknownLanguage:
+            feedback.give("full_title", "Unknown language tag in “%s”" % line)
 
         # Check titles with the database.
-        titles = aliases.split("\n")
-        titles = set([ Title.parse(title, ignore_namespace)
-                       for title in titles if title.strip() != ""])
+        titles = set()
+        for line in aliases.split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+
+            try:
+                title = Title.parse(line, ignore_namespace)
+            except UnknownLanguage:
+                feedback.give(
+                    "aliases", "Unknown language tag in “%s”" % line)
+                break
+            else:
+                titles.add(title)
+
         titles.discard(main_title)
         titles = [main_title] + list(titles)
 
