@@ -11,6 +11,11 @@ from . import markup
 class has_title_and_namespace:
     @property
     def full_title(self):
+        lang = ""
+        if hasattr(self, "title_language") \
+           and self.title_language != self.root_language:
+            lang = f"{self.title_language}:"
+
         if hasattr(self, "_full_title"):
             return self._full_title
 
@@ -20,9 +25,9 @@ class has_title_and_namespace:
             title = self.main_title
 
         if self.namespace:
-            return f"{title} ({self.namespace})"
+            return f"{lang}{title} ({self.namespace})"
         else:
-            return title
+            return f"{lang}{title}"
 
     @full_title.setter
     def full_title(self, t):
