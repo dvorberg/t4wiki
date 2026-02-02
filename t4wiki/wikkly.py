@@ -60,6 +60,7 @@ class box(ClassMacro):
     def html_element(self, contents:WikklySource, class_:str|None=None):
         name = self.get_name()
         if class_:
+            class_ = class_.strip()
             kw = {"class_": f"{name} {name}-{class_}"}
         else:
             kw = {}
