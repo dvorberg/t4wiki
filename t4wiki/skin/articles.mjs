@@ -414,6 +414,19 @@ class ArticleManager
 				box.classList.add("alert-primary");
 			}
 		});
+		
+		document.querySelectorAll(".sidebox").forEach(box => {
+			box.classList.add("alert");
+
+			if (box.classList.contains("sidebox-question"))
+			{
+				box.classList.add("alert-warning");
+			}
+			else
+			{
+				box.classList.add("alert-primary");
+			}
+		});
 	}
 }
 
