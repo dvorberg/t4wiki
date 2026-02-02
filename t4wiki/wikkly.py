@@ -58,11 +58,15 @@ class footnote(ClassMacro):
 
 class box(ClassMacro):
     def html_element(self, contents:WikklySource, class_:str|None=None):
+        name = self.get_name()
         if class_:
-            kw = {"class_": "box box-%s" % class_}
+            kw = {"class_": f"{name} {name}-{class_}"}
         else:
             kw = {}
         return self.start_tag(**kw) + contents.html() + self.end_tag
+
+class sidebox(box):
+    pass
 
 class noinclude(ClassMacro):
     pass
