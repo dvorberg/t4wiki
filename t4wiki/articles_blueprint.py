@@ -214,6 +214,8 @@ def source_form(id:int, source=None):
                 get_languages().by_iso(article.root_language),
                 article.user_info)
         except MarkupError as exc:
+            if app.debug:
+                traceback.print_tb(exc.__traceback__)
             feedback.give("source", str(exc))
         else:
             # Make a backup of the current article.
