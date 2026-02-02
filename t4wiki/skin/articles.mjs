@@ -132,6 +132,8 @@ class ArticleManager
         this.process_links();
         this.construct_toc_maybe();
 		this.set_filetype_icons_ext();
+
+		this.prettify_classes();
     }
 
     start_full_text_search()
@@ -394,6 +396,24 @@ class ArticleManager
 				set_fileicon_class(icon_dom, ext);
 			});
 		}	
+	}
+
+	prettify_classes()
+	{
+		// Go to the DOM tree and add some bootstrap classes that
+		// make things look prettier.
+		document.querySelectorAll(".box").forEach(box => {
+			box.classList.add("alert");
+
+			if (box.classList.contains("box-question"))
+			{
+				box.classList.add("alert-warning");
+			}
+			else
+			{
+				box.classList.add("alert-primary");
+			}
+		});
 	}
 }
 
