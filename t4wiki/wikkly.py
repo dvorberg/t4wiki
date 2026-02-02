@@ -57,7 +57,12 @@ class footnote(ClassMacro):
     pass
 
 class box(ClassMacro):
-    pass
+    def html_element(self, contents:WikklySource, class_:str|None=None):
+        if class_:
+            kw = {"class_": "box box-%s" % class_}
+        else:
+            kw = {}
+        return self.start_tag(**kw) + contents.html() + self.end_tag
 
 class noinclude(ClassMacro):
     pass
