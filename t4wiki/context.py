@@ -1,3 +1,4 @@
+import re
 import werkzeug
 
 from tinymarkup.context import Context
@@ -21,7 +22,13 @@ class Context(Context):
         self.article_includes = citextset()
         self.macro_info = {}
 
+    namespace_only_re = re.compile(r"\(.*\)")
     def html_link_element(self, target, text):
+        # Example: [[Page|(Namespace)]]
+        if target and text and self.namespace_only_re.match(target):
+            target = text.strip() + " " + target
+
+        # Example: [[Page]]
         if not text:
             text = target
 
