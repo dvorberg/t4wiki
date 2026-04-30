@@ -68,8 +68,19 @@
           </div>            
         </div>
         
-        <div class="col-sm-3">
-          <button type="submit" class="btn btn-primary">Submit</button>
+        <div class="col-sm-5">
+          <input style="display:none; visibility:hidden" id="followup"
+                 name="followup" value="view" />
+          
+          <span class="form-text">Submit and goto</span>
+          
+          <button type="submit" class="btn btn-primary">→ View</button>
+          <button type="submit"
+                  onclick="document.querySelector('#followup').value = 'source'"
+                  class="btn btn-secondary">→ Source</button>
+          <button type="submit"
+                  onclick="document.querySelector('#followup').value = 'files'"
+                  class="btn btn-secondary">→ Files</button>
         </div>
       </form>
     </main>    
