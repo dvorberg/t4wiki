@@ -133,13 +133,18 @@
           <input style="display:none; visibility:hidden"
                  id="followup"
                  name="followup" />
+          <span class="form-text">Submit and goto</span>
           <button type="submit"
                   onclick="document.querySelector('#followup').value = 'view'"
-                  class="btn btn-primary">Submit + View</button>
+                  class="btn btn-primary">→ View</button>
           
           <button type="submit"
                   onclick="document.querySelector('#followup').value = 'source'"
-                  class="btn btn-success">Submit + Edit Source</button>
+                  class="btn btn-secondary">→ Source</button>
+          
+          <button type="submit"
+                  onclick="document.querySelector('#followup').value = 'bibtex'"
+                  class="btn btn-secondary">→ BibTeX</button>
         </div>
       </form>     
     </main>    
