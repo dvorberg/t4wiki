@@ -71,6 +71,18 @@ class LinkMan(object):
             else:
                 return self.article.form_url(form)
 
+def followup_response(followup, article_id, article_href):
+    if followup == "view":
+        return redirect(article_href)
+    elif followup == "source":
+        return redirect(url_for("articles.source_form") + f"?id={article_id}")
+    elif followup == "bibtex":
+        return redirect(url_for("articles.bibtex_form") + f"?id={article_id}")
+    elif followup == "files":
+        return redirect(url_for("articles.files_form") + f"?id={article_id}")
+    else:
+        raise ValueError(repr(followup))
+            
 @bp.route("/title_form.cgi", methods=("GET", "POST"))
 @role_required("Writer")
 @gets_parameters_from_request
@@ -155,10 +167,8 @@ def title_form(id:int=None,
 
             commit()
 
-            if followup == "view":
-                return redirect(get_site_url() + "/" + main_title.path)
-            elif followup == "source":
-                return redirect(url_for("articles.source_form") + f"?id={id}")
+            return followup_response(followup, id,
+                                     get_site_url() + "/" + main_title.path)
     else:
         feedback = NullFeedback()
 
@@ -251,7 +261,14 @@ def render_bibtex_html(library:BibTeXLibrary, lang):
         bib_style, library, citeproc_formatter.html)
     bibliography.register(Citation([CitationItem(key)]))
 
-    return "".join(bibliography.bibliography()[0]).replace("..", ".")
+    main = "".join(bibliography.bibliography()[0]).replace("..", ".")
+    
+    if "abstract" in entry:
+        abstract = '<blockquote>%s</blockquote>' % entry["abstract"]
+    else:
+        abstract = ""
+        
+    return '<div class="bibtex-entry"><p>%s</p>%s</div>' % ( main, abstract, )
 
 
 def read_bibtex_templates():
@@ -281,7 +298,11 @@ def find_bibtex_key(source):
     else:
         return match.group(1)
 
-def bibtex_tsvector(language, bibtex_html):
+def bibtex_tsvector(language, *bibtex_html):
+    bibtex_html = [ str(s).strip() for s in bibtex_html ]
+    bibtex_html = [ s for s in bibtex_html if s ]
+    bibtex_html = " ".join(bibtex_html)
+    
     frag = html_markup.dom_tree(bibtex_html)
     tsvector = html_markup.tsearch(frag, language, "B")
     return f"setweight({tsvector}, 'B')"
@@ -290,7 +311,7 @@ def bibtex_tsvector(language, bibtex_html):
 @bp.route("/bibtex_form.cgi", methods=("GET", "POST"))
 @role_required("Writer")
 @gets_parameters_from_request
-def bibtex_form(id:int, bibtex_source=None):
+def bibtex_form(id:int, bibtex_source=None, followup="view"):
     template = app.skin.load_template("article_forms/bibtex_form.pt")
     article = model.Article.select_by_primary_key(id)
 
@@ -304,7 +325,9 @@ def bibtex_form(id:int, bibtex_source=None):
                                bibtex_html=None )
 
             commit()
-            return redirect(article.href)
+            
+            # Shortcut! 
+            return followup_response(followup, id, article.href)
 
         try:
             library = BibTeXLibrary(io.StringIO(bibtex_source))
@@ -352,7 +375,7 @@ def bibtex_form(id:int, bibtex_source=None):
                               "”."))
 
             try:
-                bibtex_html=render_bibtex_html(library, article.root_language)
+                bibtex_html = render_bibtex_html(library, article.root_language)
             except Exception as ex:
                 traceback.print_exception(ex)
 
@@ -370,11 +393,17 @@ def bibtex_form(id:int, bibtex_source=None):
                                bibtex_tsvector=sql.expression(tsvector),
                                bibjson=sql.jsonb_literal(entry) )
             commit()
-            return redirect(article.href)
+            
+            return followup_response(followup, id, article.href)
     else:
         feedback = NullFeedback()
 
     return template(linkman=LinkMan('bibtex', article), feedback=feedback,
+
+
+
+
+
                     templates=read_bibtex_templates())
 
 @bp.route("/user_info_form.cgi", methods=("GET", "POST"))
