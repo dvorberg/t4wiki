@@ -12,9 +12,17 @@ body
 
 .t4wiki
 {
-    code.bibtex-key, p.bibtex-entry
+    code.bibtex-key, div.bibtex-entry
     {
         color: var(--bibtex-color);
+    }
+
+    div.bibtex-entry
+    {        
+        blockquote
+        {
+            margin-left: 0;
+        }
     }
     
     h1 code.bibtex-key
