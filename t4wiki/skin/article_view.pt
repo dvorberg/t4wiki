@@ -51,8 +51,8 @@
 
           <p class="bibtex-entry"
              tal:condition="article and article.bibtex_html"
-             tal:content="structure article.bibtex_html" />
-          
+             tal:replace="structure article.bibtex_html" />
+
           <div tal:replace="structure article.current_html">
           </div>
         </article>
