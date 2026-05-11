@@ -89,11 +89,6 @@
                     tal:content="article.bibtex_key" />
             </a>
             <div class="info">
-              <span class="date">
-                Last modified:
-                <span tal:replace="ptutils.pretty_date(article.mtime, with_time=True)"
-                      class="date" />
-              </span> |
               <a href="${article.form_url('title')}">Title and Format</a>
               ·
               <a href="${article.form_url('source')}"> Source </a>
@@ -105,6 +100,22 @@
               <a href="${article.form_url('user_info')}">User info</a>
               ·
               <a href="${article.form_url('files')}">Files</a>                  
+              |
+              <span class="${'text-danger' if article.wordcount == 0 else 'text-success'}">
+                ${article.wordcount} Words
+              </span>
+              |
+              <span class="text-secondary">
+                Created:
+                <span tal:replace="ptutils.pretty_date(article.ctime, with_time=True)"
+                      class="date" />
+              </span>
+              |
+              <span class="text-secondary">
+                Last modified:
+                <span tal:replace="ptutils.pretty_date(article.mtime, with_time=True)"
+                      class="date" />
+              </span>
             </div>
             <div class="teaser">
               <span tal:replace="structure article.teaser" />
