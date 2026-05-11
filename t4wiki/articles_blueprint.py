@@ -669,6 +669,8 @@ def all():
         [ ("main_title, namespace", "Title",),
           ("mtime DESC", "Modification time", "mtime",),
           ("ctime DESC", "Creation time", "ctime",),
+          ("wordcount ASC", "Kürze", "wordcount_a",),
+          ("wordcount DESC", "Länge", "wordcount_d",),
          ], "articles_orderby")
 
     filter = FilterFormHandler("article_filter",
