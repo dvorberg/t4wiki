@@ -668,6 +668,7 @@ def all():
     orderby = OrderByHandler(
         [ ("main_title, namespace", "Title",),
           ("mtime DESC", "Modification time", "mtime",),
+          ("ctime DESC", "Creation time", "ctime",),
          ], "articles_orderby")
 
     filter = FilterFormHandler("article_filter",
@@ -696,7 +697,9 @@ def all():
     articles = model.ArticleForList.select(
         where, orderby.sql_clause(), *pagination.sql_clauses())
 
-    if orderby.active.id == "mtime":
+    if orderby.active.id == "ctime":
+        title = "Recently Created"
+    elif orderby.active.id == "mtime":
         title = "Recent Changes"
     else:
         title = "Articles"
