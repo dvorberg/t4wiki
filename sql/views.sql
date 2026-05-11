@@ -13,7 +13,7 @@ CREATE VIEW article_for_view AS
 DROP VIEW IF EXISTS article_for_redo CASCADE;
 CREATE VIEW article_for_redo AS
     SELECT full_title, id, ignore_namespace, root_language, 
-           source, format, user_info_source, 
+           source, format, user_info_source,
            ( SELECT json_agg(json_build_object('lang', language,
                                                'title', title,
                                                'namespace', namespace))
@@ -32,7 +32,8 @@ CREATE VIEW article_for_bibtex_redo AS
 DROP VIEW IF EXISTS article_for_recent_changes_list CASCADE;
 DROP VIEW IF EXISTS article_for_list CASCADE;
 CREATE VIEW article_for_list AS
-    SELECT id, title AS main_title, namespace, bibtex_key, teaser, mtime
+    SELECT id, title AS main_title, namespace, bibtex_key, teaser,
+           ctime, mtime, wordcount
       FROM article
       LEFT JOIN article_title ON article_id = id and is_main_title;
 
