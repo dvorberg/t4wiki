@@ -55,5 +55,32 @@ def wordcount(html:str|None) -> int:
 return wordcount(html)
 $$ LANGUAGE plpython;
 
+-- ALTER TABLE article ALTER COLUMN teaser SET EXPRESSION AS
+--    (teaser_from_html(current_html, (bibjson -> 'abstract' ->> 0)::TEXT));
+CREATE OR REPLACE FUNCTION public.teaser_from_html(current_html text,
+                                                   bibtex_abstract text)
+ RETURNS text
+ LANGUAGE plpgsql
+ IMMUTABLE
+AS $function$
+DECLARE    
+    t text := REGEXP_REPLACE(SUBSTR(current_html, 0, 300),
+                             '<[^>]*>|<[^>]*$', '', 'g');
+BEGIN
+    IF LENGTH(current_html) = 0 AND LENGTH(bibtex_abstract) > 0 THEN
+        IF LENGTH(bibtex_abstract) > 300 THEN
+            RETURN SUBSTR(bibtex_abstract, 0, 300) || ' …';
+        ELSE
+           RETURN bibtex_abstract;
+        END IF;
+    END IF;
+
+    IF LENGTH(current_html) > 300 THEN
+        RETURN t || ' …';
+    ELSE
+        RETURN t;
+    END IF;
+END;
+$function$;
 
 COMMIT;
