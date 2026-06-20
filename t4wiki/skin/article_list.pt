@@ -34,7 +34,7 @@
       </h1>
       
       <section class="col recent-changes">
-        <form action="all.cgi" method="post" class="container my-2">
+        <form action="all.cgi" method="post" class="container my-2 filtered">
           <div class="row pb-2">
             <div class="col-1 ps-0 pt-1">
               Order by
