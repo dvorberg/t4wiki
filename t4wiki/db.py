@@ -442,6 +442,10 @@ def select_one(command, parameters=(), dbobject_class=dbobject):
         else:
             return dbobject_class(cc.description, tpl)
 
+def query(command, parameters=(), dbobject_class=dbobject):
+    cc = execute(command, parameters)
+    return list(Result(cc, dbobject_class))
+
 def query_one(command, parameters=()):
     if isinstance(command, sql.Part):
         if parameters:
