@@ -16,7 +16,7 @@ from citeproc import formatter as citeproc_formatter
 from citeproc import Citation, CitationItem
 
 from t4 import sql
-from t4.typography import normalize_whitespace
+from t4.typography import normalize_whitespace, pretty_german_date
 from t4.passwords import slug
 
 from iridophore.flask import SkinnedBlueprint as Blueprint
@@ -26,8 +26,9 @@ from tinymarkup.utils import html_start_tag
 
 from .ptutils import test
 from .utils import (gets_parameters_from_request, get_site_url, rget,
-                    get_languages, get_article_root_languages,
-                    OrderByHandler, PaginationHandler, FilterFormHandler)
+                    get_languages, get_article_root_languages)
+from .filterform import (AndreasPager, AndreasPagerOption, FilterFormHandler,
+                         OrderByHandler)
 from .form_feedback import FormFeedback, NullFeedback
 from . import model
 from .db import insert_from_dict, commit, query_one, execute, cursor
@@ -652,6 +653,8 @@ def download_upload(id:int):
                      as_attachment = True,
                      mimetype=mimetype)
 
+emerson_sermon_title_re = re.compile(r"Sermon ([CLXVI]+)")
+
 @bp.route("/all.cgi", methods=("GET", "POST"))
 @role_required("Writer")
 @gets_parameters_from_request
@@ -665,14 +668,43 @@ def all():
         else:
             return None
 
-    orderby = OrderByHandler(
-        [ ("main_title, namespace", "Title",),
-          ("mtime DESC", "Modification time", "mtime",),
-          ("ctime DESC", "Creation time", "ctime",),
-          ("wordcount ASC, ctime DESC", "Kürze", "wordcount_a",),
-          ("wordcount DESC, ctime DESC", "Länge", "wordcount_d",),
-         ], "articles_orderby")
-
+    def format_title_label(article):
+        title = article.main_title
+        match = emerson_sermon_title_re.match(title)
+        if match is None:
+            return title[:5]
+        else:
+            number = match.group(1)
+            return "Serm. " + number
+        
+    orderby_options = [
+        AndreasPagerOption(
+            "main_title", "Title",
+            pager_button_label_f=format_title_label,
+            select_expressions=("main_title",)
+        ),
+        AndreasPagerOption(
+            "mtime DESC", "Modification Time",
+            pager_button_label_f=None, midlinknum=10, 
+        ),
+        AndreasPagerOption(
+            "ctime DESC", "Creation Time",
+            pager_button_label_f=None, midlinknum=10, 
+        ),
+        AndreasPagerOption(
+            "wordcount ASC, ctime DESC", "Shortness",
+            pager_button_label_f=lambda a: str(a.wordcount),
+            select_expressions=("wordcount",)
+        ),
+        AndreasPagerOption(
+            "wordcount DESC, ctime DESC", "Lengthyness",
+            pager_button_label_f=lambda a: str(a.wordcount),
+            select_expressions=("wordcount",)
+        ),
+    ]
+    
+    orderby = OrderByHandler(orderby_options, "orderby", auto_submit=True)
+    
     filter = FilterFormHandler("article_filter",
                                ( "namespace", rget_empty_as_none, None, ))
 
@@ -681,21 +713,20 @@ def all():
         if namespace:
             filter.namespace = namespace
 
-
     if filter.namespace is None:
         where = sql.where("1=1")
     else:
         where = sql.where("namespace = ", sql.string_literal(filter.namespace))
 
     count = model.ArticleForList.count(where)
-
-    pagesize = int(count/19)
-    if pagesize < 50:
-        pagesize = 50
+    pagesize = 30
 
     print("pagesize =", repr(pagesize))
 
-    pagination = PaginationHandler(pagesize=pagesize, count=count)
+    pagination = AndreasPager(pagesize, count,
+                              orderby, model.ArticleForList,
+                              where, orderby.sql_clause(), None)
+    #pagination = PaginationHandler(pagesize=pagesize, count=count)
     articles = model.ArticleForList.select(
         where, orderby.sql_clause(), *pagination.sql_clauses())
 
