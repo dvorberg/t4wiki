@@ -743,7 +743,21 @@ def all():
     return template(title=title, articles=articles,
                     orderby=orderby, filter=filter, pagination=pagination)
 
+triggers = [ ("wiki.article", "notify_on_article_change",),
+             ("wiki.article", "update_mtime_on_article",) ]
+def _able_triggers(what):
+    for (table, trigger) in triggers:
+        execute("ALTER TABLE %s %s TRIGGER %s" % ( table, what, trigger, ))
+
+def enable_triggers():
+    _able_triggers("ENABLE")
+    
+def disable_triggers():
+    _able_triggers("DISABLE")
+    
 def redo_html():
+    disable_triggers()
+    
     for article in model.ArticleForRedo.select(sql.orderby("full_title")):
         print(article.full_title, end="")
         sys.stdout.flush()
@@ -778,9 +792,12 @@ def redo_html():
                           titles_tsvector=sql.expression(titles_tsvector))
         print()
         sys.stdout.flush()
+    enable_triggers()
     commit()
 
 def redo_bibtex():
+    disable_triggers()
+    
     articles = model.ArticleForBibTeXRedo.select(
         sql.where("bibtex_source IS NOT NULL"), sql.orderby("full_title"))
 
@@ -807,4 +824,5 @@ def redo_bibtex():
         print()
         sys.stdout.flush()
 
+    enable_triggers()
     commit()
