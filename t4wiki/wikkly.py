@@ -171,6 +171,20 @@ class poem(Macro):
         poem = poem.strip()
         return f'<div class="poem">{poem}</div>'
 
+class code(Macro):
+    environments = { "block", "inline", }
+    
+    def html_element(self, source, language=None):
+        if not language:
+            language = "fundamental"
+            
+        code = html.code(source, class_="lang-" + language)
+        
+        if self.environment == "block":
+            return html.pre(code)
+        else:
+            return code
+
 
 macro_library = MacroLibrary()
 macro_library.register_module(globals())
