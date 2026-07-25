@@ -283,8 +283,20 @@ class ArticleManager
             function(a) {
                 const href = decodeURI(a.getAttribute("href")),
 					  parts = href.split("#"),
-					  key = parts[0].toLowerCase(), 
-					  fulltitle = link_info[key];
+					  key = parts[0].toLowerCase(),
+					  tpl = link_info[key];
+				var fulltitle, wordcount;
+
+				if (tpl === null)
+				{
+					fulltitle = null;
+					wordcount = null;
+				}
+				else
+				{
+					  fulltitle = tpl[0],
+					  wordcount = tpl[1];
+				}
 
 				var anchor;
 				if (parts.length == 2)
@@ -300,7 +312,15 @@ class ArticleManager
                 {
                     a.setAttribute(
 						"href", "/" + title2path(fulltitle) + anchor);
-                    a.classList.add("available");
+
+					if (wordcount == 0)
+					{
+						a.classList.add("empty");
+					}
+					else
+					{
+						a.classList.add("available");
+					}
                 }
                 else
                 {
