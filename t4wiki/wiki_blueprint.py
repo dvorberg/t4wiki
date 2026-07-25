@@ -244,9 +244,10 @@ def article_view(article_title=None):
             file_info_json = "{}"
 
         link_info, = db.query_one(
-            "SELECT json_object_agg(target, full_title)::text "
+            "SELECT json_object_agg(target, json_build_array(full_title, "
+            "                                                wordcount))::text"
             "  FROM article_link_resolved "
-            " WHERE article_id IN (%s)" % article_ids_s)
+            " WHERE source_article_id IN (%s)" % article_ids_s)
 
         linking_here = list(model.ResolvedArticleTeaser.select(
             sql.where("resolved_full_title =",
