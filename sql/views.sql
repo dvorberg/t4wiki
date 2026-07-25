@@ -55,10 +55,11 @@ LEFT JOIN article_title
 
 DROP VIEW IF EXISTS article_link_ranks CASCADE;
 CREATE VIEW article_link_ranks AS 
-    SELECT article_link.article_id,
+    SELECT article_link.article_id AS source_article_id,
+           article_title.article_id AS target_article_id,
            target_cmpid AS cmpid,
            target_title AS target,
-           full_title,
+           full_title, 
            CASE WHEN source_article.namespace IS NOT NULL
                  AND article_title.namespace IS NOT NULL
                  AND source_article.namespace = article_title.namespace
@@ -82,24 +83,26 @@ CREATE VIEW article_link_ranks AS
 
 DROP VIEW IF EXISTS article_link_resolved CASCADE;
 CREATE VIEW article_link_resolved AS
-    SELECT article_id, target, full_title
+    SELECT source_article_id, target, full_title, wordcount
       FROM article_link_ranks
-     WHERE rank = ( SELECT MAX(rank) FROM article_link_ranks AS inner_
-                     WHERE inner_.article_id = article_link_ranks.article_id
-                       AND inner_.cmpid = article_link_ranks.cmpid );
+ LEFT JOIN article ON article.id = target_article_id
+     WHERE rank = (
+         SELECT MAX(rank) FROM article_link_ranks AS inner_
+          WHERE inner_.source_article_id = article_link_ranks.source_article_id
+            AND inner_.cmpid = article_link_ranks.cmpid );
 
 DROP VIEW IF EXISTS article_teaser_on_resolved CASCADE;
 CREATE VIEW article_teaser_on_resolved AS
-    SELECT article_link_resolved.article_id,
+    SELECT article_link_resolved.source_article_id AS article_id,
            article_link_resolved.full_title AS resolved_full_title,
            article_title.title AS main_title,
            article_title.namespace,
            teaser
       FROM article_link_resolved
  LEFT JOIN article_title
-        ON article_title.article_id = article_link_resolved.article_id
+        ON article_title.article_id = article_link_resolved.source_article_id
             AND is_main_title
- LEFT JOIN article ON id = article_link_resolved.article_id;
+ LEFT JOIN article ON id = article_link_resolved.source_article_id;
 
 DROP VIEW IF EXISTS current_article_revision CASCADE;
 CREATE VIEW current_article_revision AS
