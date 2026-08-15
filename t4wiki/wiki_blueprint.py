@@ -177,22 +177,27 @@ def article_view(article_title=None):
     if result is None or "search" in request.args:
         # No article found with that title. Present a search result only.
 
+        text_query = article_title
+        
         title = markup.Title.parse(article_title)
         if title.namespace:
             query_namespace = title.namespace
+            
             #where = sql.where("namespace = ",
             #                  sql.string_literal(query_namespace))
+            
             where = sql.where(
                 sql.string_literal(query_namespace),
                 " IN (SELECT namespace FROM article_title "
                 "      WHERE article_title.article_id = "
                 "search_result.article_id)")
 
+            text_query = title.title
         else:
             where = None
             query_namespace = ""
 
-        search_result = full_text_search(article_title, where)
+        search_result = full_text_search(text_query, where)
         if result:
             regular_result = model.Article.select_by_primary_key(result[0])
         else:
