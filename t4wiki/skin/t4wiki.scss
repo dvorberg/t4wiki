@@ -58,6 +58,16 @@ body
         {
             text-align: right; 
         }
+
+        ol, ul
+        {
+            padding-left: 1.4rem;
+
+            ol, ul
+            {
+                padding-left: 2rem;
+            }
+        }           
     }
 
     section.recent-changes
