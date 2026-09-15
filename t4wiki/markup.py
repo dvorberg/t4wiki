@@ -239,13 +239,11 @@ def compile_typst_article(source, root_language,
     """
     Input HTML is tidied and the contents of the <body>-tag are returned.
     """
-    html = typst_to_t4wiki_html(source, root_language, user_info)
-    doc = html_markup.dom_tree(html)
-    body = html_markup.body_contents(doc)
+    body = typst_to_t4wiki_html(source, root_language, user_info)    
 
     return CompiledArticle(body.string(), # html
                            html_markup.tsearch(body, root_language), # tsearch
-                           list(html_markup.wiki_links(body)), # links
+                           html_markup.wiki_links(body), # links
                            [], # includes
                            {}) # macro_info
 
@@ -259,7 +257,7 @@ def extract_article_from_html(html, root_language,
 
     return CompiledArticle(body.string(), # html
                            html_markup.tsearch(body, root_language), # tsearch
-                           list(html_markup.wiki_links(body)), # links
+                           html_markup.wiki_links(body), # links
                            [], # includes
                            {}) # macro_info
     

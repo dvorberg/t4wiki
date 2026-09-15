@@ -88,7 +88,10 @@ def tsearch(dom_tree:xsc.Frag, root_language, default_weight=None) -> str:
 
 absolute_link_re = re.compile(r"^([a-zA-Z0-9]+:|/)", re.IGNORECASE)
 def wiki_links(dom_tree:xsc.Frag) -> list[str]:
+    cache = set()
     for a in dom_tree.walknodes(html.a):
         href = str(a.attrs.href)
         if not absolute_link_re.match(href):
-            yield href
+            if not href in cache:
+                cache.add(href)
+                yield href
