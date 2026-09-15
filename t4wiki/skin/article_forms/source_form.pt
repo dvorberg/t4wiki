@@ -44,6 +44,9 @@
             <tal:block tal:condition="article.format == 'wikitext'">
               (Media-) Wiki Text
             </tal:block>
+            <tal:block tal:condition="article.format == 'typst'">
+              Typst
+            </tal:block>
             Source
           </label>
 

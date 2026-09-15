@@ -115,6 +115,11 @@
                                       ptutils.selected(value == 'wikkly')">
               Wikkly Text
             </option>
+            <option value="typst"
+                    tal:attributes="selected
+                                      ptutils.selected(value == 'typst')">
+              Typst
+            </option>
             <option value="wikitext"
                     tal:attributes="selected
                                       ptutils.selected(value == 'wikitext')">

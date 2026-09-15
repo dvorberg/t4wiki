@@ -12,6 +12,7 @@ from tinymarkup.writer import TSearchWriter
 
 from . import model
 from . import html_markup
+from .typst_markup import typst_to_t4wiki_html
 from .exceptions import TitleUnavailable
 from .context import Context, get_languages
 from .db import insert_from_dict, execute, query_one
@@ -133,7 +134,9 @@ def format_by_suffix(suffix):
         suffix = suffix[1:]
 
     return { "mwiki": "wikitext",
-             "wikkly": "wikkly" }[suffix]
+             "wikkly": "wikkly",
+             "html": "html",
+             "typ": "typst"}[suffix]
 
 def tools_by_format(source_format):
     """
@@ -163,6 +166,10 @@ def tools_by_format(source_format):
             # to extract_article_from_html() rather than using these None
             # values.
             return None, None, None, None
+        case "typst":
+            # Same as for HTML above, but compile_typst_article() will be
+            # used. 
+            return None, None, None, None
         case _:
             raise NotImplementedError(source_format)
 
@@ -181,8 +188,9 @@ def compile_article(source, format,
     are identical, it is treated specially below.
     """
     if format == "html":
-        return extract_article_from_html(
-            source, format, root_language, user_info)
+        return extract_article_from_html(source, root_language, user_info)
+    elif format == "typst":
+        return compile_typst_article(source, root_language, user_info)
     else:
         return compile_article_from_markup(
             source, format, root_language, user_info)
@@ -226,12 +234,13 @@ def compile_article_from_markup(source, format,
                              context.article_includes,
                              context.macro_info, )
 
-def extract_article_from_html(source, format,
-                              root_language, user_info) -> CompiledArticle:
+def compile_typst_article(source, root_language,
+                          user_info) -> CompiledArticle:
     """
     Input HTML is tidied and the contents of the <body>-tag are returned.
     """
-    doc = html_markup.dom_tree(source)
+    html = typst_to_t4wiki_html(source, root_language, user_info)
+    doc = html_markup.dom_tree(html)
     body = html_markup.body_contents(doc)
 
     return CompiledArticle(body.string(), # html
@@ -240,6 +249,20 @@ def extract_article_from_html(source, format,
                            [], # includes
                            {}) # macro_info
 
+def extract_article_from_html(html, root_language,
+                              user_info) -> CompiledArticle:
+    """
+    Input HTML is tidied and the contents of the <body>-tag are returned.
+    """
+    doc = html_markup.dom_tree(html)
+    body = html_markup.body_contents(doc)
+
+    return CompiledArticle(body.string(), # html
+                           html_markup.tsearch(body, root_language), # tsearch
+                           list(html_markup.wiki_links(body)), # links
+                           [], # includes
+                           {}) # macro_info
+    
 
 
 def update_titles_for(id, titles, root_language):
