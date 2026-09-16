@@ -20,6 +20,7 @@ class Context(Context):
         self.user_info = user_info
         self.article_links = citextset()
         self.article_includes = citextset()
+        self.article_citations = citextset()
         self.macro_info = {}
 
     namespace_only_re = re.compile(r"\(.*\)")
