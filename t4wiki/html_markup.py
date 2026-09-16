@@ -1,5 +1,6 @@
 import re
 from io import StringIO
+from typing import Set
 
 from ll.xist import xsc, parse, xfind
 from ll.xist.ns import html
@@ -37,7 +38,7 @@ for weight, clss in ( ("B", ( html.h1, html.h2, )),
 def weight(element):
     return weights.get(element.__class__, "D")
 
-word_re = re.compile("\w+")
+word_re = re.compile(r"\w+")
 
 def tsearch(dom_tree:xsc.Frag, root_language, default_weight=None) -> str:
     languages = get_languages()
@@ -87,11 +88,25 @@ def tsearch(dom_tree:xsc.Frag, root_language, default_weight=None) -> str:
     return output.getvalue()
 
 absolute_link_re = re.compile(r"^([a-zA-Z0-9]+:|/)", re.IGNORECASE)
-def wiki_links(dom_tree:xsc.Frag) -> list[str]:
-    cache = set()
+def wiki_links(dom_tree:xsc.Frag) -> Set[str]:
+    ret = set()
     for a in dom_tree.walknodes(html.a):
-        href = str(a.attrs.href)
-        if not absolute_link_re.match(href):
-            if not href in cache:
-                cache.add(href)
-                yield href
+        if cls != "cite":
+            href = str(a.attrs.href)
+            if href and not absolute_link_re.match(href):
+                ret.add(href)
+
+    return ret
+
+def citekeys(dom_tree:xsc.Frag) -> Set[str]:
+    ret = set()
+    for a in dom_tree.walknodes(html.a):
+        cls = str(a.attrs.class_)
+        ic(cls)
+        if cls == "cite":
+            key = str(a.attrs["data-citekey"])
+            ic(key)
+            ret.add(key)
+
+    return ret
+        
