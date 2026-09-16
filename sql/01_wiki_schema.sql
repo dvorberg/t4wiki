@@ -105,7 +105,7 @@ CREATE TABLE article_include
     UNIQUE(article_id, wants_to_include)
 );
 
-CREATE TABLE article_bibref
+CREATE TABLE article_citation
 (
     article_id INTEGER NOT NULL REFERENCES article ON DELETE CASCADE,
     citekey citext NOT NULL,    
