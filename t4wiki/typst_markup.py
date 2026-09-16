@@ -51,7 +51,7 @@ def typst_to_t4wiki_html(source, root_language, user_info):
             p('#set text(lang: "%s")' % root_language.iso)
             p()
             for lang in get_languages():
-                p('#let de(body) = wikilang("%s", body)' % lang)
+                p('#let %s(body) = wikilang("%s", body)' % (lang, lang))
             p()
             
             fp.write(source)
@@ -87,5 +87,5 @@ def typst_to_t4wiki_html(source, root_language, user_info):
         if idx is not None:
             del body[idx]
             
-    return  body
+    return body
 
