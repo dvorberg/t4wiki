@@ -119,6 +119,27 @@ CREATE VIEW current_article_revision AS
            ON article_title.article_id = id AND is_main_title;
 
 
+DROP VIEW IF EXISTS article_bibtex_info CASCADE;
+CREATE VIEW article_bibtex_info AS
+WITH
+articles AS (
+    SELECT title, namespace, bibtex_key, bibtex_html,
+           bibjson -> 'author' -> 0 as author,
+           bibjson -> 'shorttitle' ->> 0 as shorttitle,
+           bibjson -> 'title' ->> 0 as bibtitle
+      FROM article
+ LEFT JOIN article_title ON article_id = article.id
+       AND article_title.is_main_title
+)
+SELECT title, namespace, bibtex_key, bibtex_html,
+       author ->> 'given' AS firstname,
+       author ->> 'family' AS lastname,
+       CASE WHEN shorttitle IS NULL THEN bibtitle
+                                    ELSE shorttitle
+       END AS shorttitle
+  FROM articles;
+
+
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
 
 set search_path = uploads, public;
@@ -156,6 +177,5 @@ upload_info_by_filename AS (
 SELECT article_id, json_object_agg(filename, upload_info) AS uploads_info
   FROM upload_info_by_filename
  GROUP BY article_id;
-
 
 COMMIT;
