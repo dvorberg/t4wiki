@@ -71,6 +71,20 @@
           <ol>
           </ol>
         </section>
+
+        <section class="bibliography" tal:condition="bibliography">
+          <h4>Bibliography</h4>
+          <ul>
+            <li tal:repeat="entry bibliography">
+              <span class="attribution"
+                    tal:attributes="data-key entry.bibtex_key"
+                    tal:content="structure entry.attribution_html" />
+              <span tal:replace="structure entry.simple_bibtex_html" />
+              <a href="${entry.href}" class="bibtex-key"
+                 tal:content="entry.bibtex_key"></a>
+            </li>
+          </ul>
+        </section>
         
         <section tal:condition="len(linking_here) > 0"
                  class="linking-here">
