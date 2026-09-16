@@ -1,4 +1,4 @@
-import os.path as op, functools
+import os.path as op, functools, json, re
 
 from flask import url_for
 from t4 import sql
@@ -154,6 +154,48 @@ class ArticleTitle(dbobject, has_title_and_namespace):
     def language_object(self):
         return get_languages().by_iso(self.language)
 
+html_p_contents = re.compile("<p>(.*?)</p>", re.DOTALL)    
+class BibEntry(dbobject, has_title_and_namespace):
+    __relation__ = "article_bibtex_info"
+    __namespace__ = "wiki"
+
+    @property
+    def shorttitle(self) -> str:
+        return self._shorttitle
+
+    @shorttitle.setter
+    def shorttitle(self, s):        
+        self._shorttitle = s.split(":")[0].strip()
+    
+    @property
+    def metainfo_json(self) -> str:
+        """
+        Return all our fields except bibtex_html in a JSON dict. 
+        """
+        d = self.as_dict()
+        del d["bibtex_html"]
+        return json.dumps(d)
+
+    @property
+    def simple_bibtex_html(self) -> str:
+        """
+        Get the HTML contents of the first <p>, if available.
+        """
+        match = html_p_contents.search(self.bibtex_html)
+        if match is None:
+            return ""
+        else:
+            return match.group(1)
+
+    @property
+    def attribution_html(self) -> str:
+        if self.firstname:
+            letter = self.firstname[0] + ". "
+        else:
+            letter = ""
+
+        return letter + self.lastname + ", <i>" + self.shorttitle + "</i>"
+    
 class FulltextEntry(dbobject, has_title_and_namespace):
     pass
 
