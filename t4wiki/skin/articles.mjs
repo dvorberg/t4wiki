@@ -128,6 +128,7 @@ class ArticleManager
 		this.handle_upload_links();
         this.deal_with_includes();
         this.collect_footnotes();
+		this.apply_bibliography();
         this.make_headings_targets();
         this.process_links();
         this.construct_toc_maybe();
@@ -272,6 +273,57 @@ class ArticleManager
 				}
 			});
     }
+
+	apply_bibliography()
+	{
+		// Collect bibliography data and fill in attribution strings
+		// where needed.
+		
+		let attributions = {};		
+		this.article_section.querySelectorAll(
+			"aside section.bibliography li").forEach(li => {
+				const span = li.querySelector("span.attribution"),
+					  a = li.querySelector("a.bibtex-key");
+				attributions[span.getAttribute("data-key")] =
+					{
+						html: span.innerHTML,
+						href: a.getAttribute("href")
+					};
+			});
+		
+		this.main_article.querySelectorAll("a.cite").forEach(a => {			
+			const key = a.getAttribute("data-citekey"),
+				  attribution = attributions[key];
+			
+			let span = document.createElement("SPAN");
+			
+			if (attribution)
+			{
+				span.setAttribute("class", "attribution");
+				span.innerHTML = attribution.html;
+				a.setAttribute("href", attribution.href);
+			}
+			else
+			{
+				span.innerHTML = '<span class="text-danger">' + key + '</span>';
+			}
+
+			if (a.childNodes.length == 0)
+			{
+				a.append(span);
+			}
+			else
+			{
+				span.append(new Text(", "));
+				a.insertBefore(span, a.childNodes[0]);
+			}
+
+			a.setAttribute("data-bs-toggel", "tooltip");
+			a.setAttribute("data-bs-title", key);
+
+			new bootstrap.Tooltip(a);
+		});		
+	}
 
     process_links()
     {
