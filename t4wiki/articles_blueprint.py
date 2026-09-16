@@ -11,6 +11,8 @@ from ll.xist import xsc
 from ll.xist.ns import html
 
 from citeproc.source.bibtex import BibTeX as BibTeXLibrary
+BibTeXLibrary.fields["shorttitle"] = "shorttitle"
+
 from citeproc import CitationStylesStyle, CitationStylesBibliography
 from citeproc import formatter as citeproc_formatter
 from citeproc import Citation, CitationItem
@@ -33,7 +35,8 @@ from .form_feedback import FormFeedback, NullFeedback
 from . import model
 from .db import insert_from_dict, commit, query_one, execute, cursor
 from .markup import (Title, tools_by_format, compile_article,
-                     update_titles_for, update_links_for, update_includes_for,
+                     update_titles_for, update_links_for, 
+                     update_includes_for, update_citations_for, 
                      normalize_source, )
 from .authentication import login_required, role_required
 from . import html_markup
@@ -219,7 +222,8 @@ def source_form(id:int, source=None):
         titles = [ Title.from_db(title) for title in titles ]
 
         try:
-            html, tsearch, links, includes, macro_info = compile_article(
+            (html, tsearch, links, includes,
+             citations, macro_info) = compile_article(
                 source,
                 article.format,
                 get_languages().by_iso(article.root_language),
@@ -242,6 +246,7 @@ def source_form(id:int, source=None):
 
             update_links_for(id, links)
             update_includes_for(id, includes)
+            update_citations_for(id, citations)
 
             commit()
             return redirect(article.href)
@@ -771,7 +776,7 @@ def redo_html():
                    for d in article.titles ]
 
         # Compile the source to HTML and tsearch.
-        html, tsearch, links, includes, macro_info = compile_article(
+        html, tsearch, links, includes, citations, macro_info = compile_article(
             article.source,
             article.format,
             root_language,
@@ -779,6 +784,7 @@ def redo_html():
 
         update_links_for(article.id, links)
         update_includes_for(article.id, includes)
+        update_citations_for(article.id, citations)
 
         # Get the titles from the database to update their tsvector.
         titles_tsvector = "||".join([title.to_tsvector(root_language)
