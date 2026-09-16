@@ -1,5 +1,5 @@
 import io, re, unicodedata, importlib
-from typing import NamedTuple, List
+from typing import NamedTuple, List, Set
 
 from flask import current_app as app
 
@@ -177,8 +177,9 @@ def tools_by_format(source_format):
 class CompiledArticle(NamedTuple):
     current_html: str
     current_tsearch: str
-    article_links: List[str]
-    article_includes: List[str]
+    article_links: Set[str]
+    article_includes: Set[str]
+    article_citations: Set[str]
     macro_info: dict
 
 def compile_article(source, format,
@@ -228,11 +229,12 @@ def compile_article_from_markup(source, format,
         # We can’t have a NULL value here.
         tsearch = "to_tsvector('simple', '')"
 
-    return CompiledArticle(  html_out.getvalue(),
-                             tsearch,
-                             context.article_links,
-                             context.article_includes,
-                             context.macro_info, )
+    return CompiledArticle( html_out.getvalue(),
+                            tsearch,
+                            context.article_links,
+                            context.article_includes,
+                            context.article_citations, 
+                            context.macro_info, )
 
 def compile_typst_article(source, root_language,
                           user_info) -> CompiledArticle:
@@ -244,7 +246,8 @@ def compile_typst_article(source, root_language,
     return CompiledArticle(body.string(), # html
                            html_markup.tsearch(body, root_language), # tsearch
                            html_markup.wiki_links(body), # links
-                           [], # includes
+                           set(), # includes
+                           html_markup.citekeys(body),
                            {}) # macro_info
 
 def extract_article_from_html(html, root_language,
@@ -258,10 +261,9 @@ def extract_article_from_html(html, root_language,
     return CompiledArticle(body.string(), # html
                            html_markup.tsearch(body, root_language), # tsearch
                            html_markup.wiki_links(body), # links
-                           [], # includes
+                           set(), # includes
+                           html_markup.citekeys(body),
                            {}) # macro_info
-    
-
 
 def update_titles_for(id, titles, root_language):
     tsvectors = []
@@ -280,20 +282,29 @@ def update_titles_for(id, titles, root_language):
     tsvector = "||".join(tsvectors)
     model.Article.update_db(id, titles_tsvector=sql.expression(tsvector))
 
-def update_links_for(id, links):
-    execute("DELETE FROM wiki.article_link WHERE article_id = %i" % id)
-    for link in links:
-        insert_from_dict( "wiki.article_link",
-                          { "article_id": id, "target_title": link },
-                          retrieve_id=False)
 
-def update_includes_for(id, includes):
-    execute("DELETE FROM wiki.article_include WHERE article_id = %i" % id)
-    for include in includes:
-        insert_from_dict( "wiki.article_include",
-                          { "article_id": id, "wants_to_include": include },
-                          retrieve_id=False)
+def _update_reference_table_for(article_id:int,
+                                reference_table:str, column:str,
+                                references:Set[str]):
+    execute(f"DELETE FROM wiki.{reference_table} "
+            f" WHERE article_id = {article_id}")
 
+    if references:
+        execute(sql.insert(f"wiki.{reference_table}",
+                           ("article_id", column,),
+                           [ (article_id, sql.string_literal(ref),)
+                             for ref in references ]))
+    
+def update_links_for(id:int, links:Set[str]):
+    _update_reference_table_for(id, "article_link", "target_title", links)
+    
+def update_citations_for(id:int, citations:Set[str]):
+    _update_reference_table_for(id, "article_citation", "citekey", citations)
+
+def update_includes_for(id:int, includes:Set[str]):
+    _update_reference_table_for(id, "article_include", "wants_to_include",
+                                includes)
+    
 def get_user_info(id):
     info, = query_one("SELECT user_info FROM wiki.article "
                       " WHERE id = %s", ( int(id), ))
