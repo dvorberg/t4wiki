@@ -12,9 +12,10 @@ body
 
 .t4wiki
 {
-    code.bibtex-key, div.bibtex-entry
+    .bibtex-key, div.bibtex-entry
     {
         color: var(--bibtex-color);
+        text-decoration: none;
     }
 
     div.bibtex-entry
@@ -67,9 +68,41 @@ body
             {
                 padding-left: 2rem;
             }
-        }           
+        }
+
+        a.cite
+        {
+            text-decoration: none;
+        }
+
+        figcaption.blockquote-footer
+        {
+            margin-left: 2em;
+        }
     }
 
+    section.bibliography
+    {
+        ul, li
+        {
+            margin: 0;
+            padding-left: 0;
+            list-style: none;
+        }
+
+        li
+        {
+            margin-bottom: 0.5em;
+
+            .attribution
+            {
+                display: none;
+                visibility: hidden;
+            }
+        }        
+    }
+
+    
     section.recent-changes
     {
         ul
