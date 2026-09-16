@@ -5,7 +5,29 @@
     } 
     
     if target() == "html" {
-        html.elem("span", attrs: (lang: lang), body)
+        // This is bad programming, because it relies on repr()’s user 
+        // representation to make a decision. Unfortunately I wasn’t able
+        // to figure out a better way to tell if my function is called
+        // within a block or if it is containing blocks.
+        //
+        // I can’t just use <span> all of the time, because that will
+        // put <p>s or even <figure>s into <span> where they don't belong.
+
+        // Use the language functions as the innermost function
+        // you call. This will avoid trouble in HTML output.
+
+        // I assume typst's HTML output will improve and put lang=
+        // attributes into the HTML where appropriate. At this time
+        // lang= is only used at document level.
+        
+        // html.elem("pre", repr(body))
+        
+        let r = repr(body)
+        if (r.starts-with("[")) {
+            html.elem("span", attrs: (lang: lang), body)
+        } else {
+            html.elem("div", attrs: (lang: lang), text(body))
+        }        
     } else {
         text(lang: lang, style: style, body)
     }
