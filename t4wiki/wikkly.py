@@ -185,6 +185,15 @@ class code(Macro):
         else:
             return code
 
+class cite(Macro):
+    environments = { "inline", }
+
+    def html_element(self, citekey:str, supplement:str|None=None):
+        self.context.article_citations.add(citekey)
+        
+        return html.a(supplement or "",
+                      class_="cite",
+                      **{"data-citekey": citekey})
 
 macro_library = MacroLibrary()
 macro_library.register_module(globals())
