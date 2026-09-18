@@ -222,7 +222,7 @@ def source_form(id:int, source=None):
         titles = [ Title.from_db(title) for title in titles ]
 
         try:
-            (html, tsearch, links, includes,
+            (current_html, tsearch, links, includes,
              citations, macro_info) = compile_article(
                 source,
                 article.format,
@@ -231,7 +231,8 @@ def source_form(id:int, source=None):
         except MarkupError as exc:
             if app.debug:
                 traceback.print_tb(exc.__traceback__)
-            feedback.give("source", str(exc))
+            pre = html.pre(str(exc))
+            feedback.give("source", pre)
         else:
             # Make a backup of the current article.
             execute("INSERT INTO archive.article_revision "
@@ -239,7 +240,7 @@ def source_form(id:int, source=None):
                     "     WHERE id = %s", (id,))
 
             article.update_db(source=source,
-                              current_html=html,
+                              current_html=current_html,
                               main_tsvector=sql.expression(tsearch),
                               mtime=sql.expression("NOW()"),
                               macro_info=sql.json_literal(macro_info))
