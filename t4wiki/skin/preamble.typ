@@ -97,3 +97,14 @@
     }
 }
 
+#show link: it => {
+    if target() == "html" {
+        //html.elem("pre")[#repr(it.dest)]
+        html.elem("a", attrs: (class: "t4wiki-link",
+            href: repr(it.dest).slice(1, -1)))[#text(it.body)]
+    } else {
+        [#text(it)]
+    }
+}
+
+
