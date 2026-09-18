@@ -1,6 +1,7 @@
 import re
 from io import StringIO
 from typing import Set
+import urllib.parse
 
 from ll.xist import xsc, parse, xfind
 from ll.xist.ns import html
@@ -93,6 +94,7 @@ def wiki_links(dom_tree:xsc.Frag) -> Set[str]:
     for a in dom_tree.walknodes(html.a):
         if cls != "cite":
             href = str(a.attrs.href)
+            href = urllib.parse.unquote(href)
             if href and not absolute_link_re.match(href):
                 ret.add(href)
 
