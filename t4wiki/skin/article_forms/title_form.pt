@@ -110,15 +110,15 @@
           <label class="form-label">Markup Format</label>
 
           <select name="format" class="form-select">
-            <option value="wikkly"
-                    tal:attributes="selected
-                                      ptutils.selected(value == 'wikkly')">
-              Wikkly Text
-            </option>
             <option value="typst"
                     tal:attributes="selected
                                       ptutils.selected(value == 'typst')">
               Typst
+            </option>
+            <option value="wikkly"
+                    tal:attributes="selected
+                                      ptutils.selected(value == 'wikkly')">
+              Wikkly Text
             </option>
             <option value="wikitext"
                     tal:attributes="selected
