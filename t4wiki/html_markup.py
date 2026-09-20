@@ -104,10 +104,8 @@ def citekeys(dom_tree:xsc.Frag) -> Set[str]:
     ret = set()
     for a in dom_tree.walknodes(html.a):
         cls = str(a.attrs.class_)
-        ic(cls)
         if cls == "cite":
             key = str(a.attrs["data-citekey"])
-            ic(key)
             ret.add(key)
 
     return ret
