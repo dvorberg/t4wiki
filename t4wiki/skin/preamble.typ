@@ -107,4 +107,15 @@
     }
 }
 
+// This is that the [[body]] or [[body|target]] syntax is turned into.
+// This definition exists in case I want to or have to separate #link and
+// #wikilink in the future. 
+#let wikilink(body, target:none) = {
+    if (target == none) {
+        link(body)
+    } else {
+        link(target, body)
+    }
+}
+
 

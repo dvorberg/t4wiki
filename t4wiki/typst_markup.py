@@ -13,6 +13,7 @@ from . import db, html_markup
 citekey_re = re.compile(r"@(\w+)"
                         r"|#cite\(label\([\"'](\w+)[\"']\)\)"
                         r"|#cite\(<(\w+)>\)")
+wikilink_re = re.compile(r"\[\[(.*?)(?:\|(.*?))?\]\]")
 def typst_to_t4wiki_html(source, root_language, user_info):
     # Find references and citations in the typst source.
     # keys = set([ a or b or c for (a,b,c) in citekey_re.findall(source) ])
@@ -32,6 +33,15 @@ def typst_to_t4wiki_html(source, root_language, user_info):
     
     # Load out preamble for the typst file.
     definitions = app.skin.read("preamble.typ")
+
+    def replace_link(match):
+        text, link = match.groups()
+        if link is None:
+            return '#wikilink("%s")' % text
+        else:
+            return '#wikilink(target: "%s")[%s]' % ( link, text, )            
+    source = wikilink_re.sub(replace_link, source)
+
     
     with tempfile.TemporaryDirectory(delete=(not app.debug)) as tmpdirname:
         tmpdir = pathlib.Path(tmpdirname)
