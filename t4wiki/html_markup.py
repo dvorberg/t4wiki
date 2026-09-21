@@ -97,6 +97,7 @@ absolute_link_re = re.compile(r"^([a-zA-Z0-9]+:|/)", re.IGNORECASE)
 def wiki_links(dom_tree:xsc.Frag) -> Set[str]:
     ret = set()
     for a in dom_tree.walknodes(html.a):
+        cls = str(a["class"])
         if cls == "t4wiki-link":
             href = str(a.attrs.href)
             href = urllib.parse.unquote(href)
