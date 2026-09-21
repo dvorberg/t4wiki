@@ -99,11 +99,18 @@
 
 #show link: it => {
     if target() == "html" {
-        //html.elem("pre")[#repr(it.dest)]
-        html.elem("a", attrs: (class: "t4wiki-link",
-            href: repr(it.dest).slice(1, -1)))[#text(it.body)]
+        if str(type(it.dest)) == "location" {            
+            // The loc-# attribute us not user-accessible (at this point in
+            // time?) But just going the regular way will insert a regular
+            // link which will work fine for our purposes. 
+            text(it)
+        }
+        else {
+            html.elem("a", attrs: (class: "t4wiki-link",
+                href: repr(it.dest).slice(1, -1)))[#text(it.body)]
+        }
     } else {
-        [#text(it)]
+        text(it)
     }
 }
 
@@ -158,4 +165,7 @@
         figure(image(name), caption: caption)
     }
 }
+
+#set outline(title:none)
+
 
