@@ -5,12 +5,12 @@
     } 
     
     if target() == "html" {
-        // This is bad programming, because it relies on repr()’s user 
-        // representation to make a decision. Unfortunately I wasn’t able
+        // This is bad programming, because it relies on repr()ʼs user 
+        // representation to make a decision. Unfortunately I wasnʼt able
         // to figure out a better way to tell if my function is called
         // within a block or if it is containing blocks.
         //
-        // I can’t just use <span> all of the time, because that will
+        // I canʼt just use <span> all of the time, because that will
         // put <p>s or even <figure>s into <span> where they don't belong.
 
         // Use the language functions as the innermost function
@@ -118,4 +118,44 @@
     }
 }
 
+
+#let bild(name, caption) = context {
+    if target() == "html" {
+        let capelem = none        
+        if caption != none {
+            capelem = html.elem("figcaption", attrs: (class: "figure-caption"))[
+                #caption]
+        }
+        
+        html.elem("figure",
+                  attrs: (class: "figure t4wiki-figure"))[
+          #html.elem("img",
+                     attrs: (data-filename: name,
+                             class: "rounded preview-image preview-1800"))
+          #capelem
+        ]
+    } else {
+        figure(image(name), caption: caption)
+    }
+}
+
+#let bildrechts(name, caption) = context {
+    if target() == "html" {
+        let capelem = none        
+        if caption != none {
+            capelem = html.elem("figcaption", attrs: (class: "figure-caption"))[
+                #caption]
+        }
+        
+        html.elem("figure",
+                  attrs: (class: "figure t4wiki-figure float-end small"))[
+          #html.elem("img",
+                     attrs: (data-filename: name,
+                             class: "rounded preview-image preview-300"))
+          #capelem
+        ]
+    } else {
+        figure(image(name), caption: caption)
+    }
+}
 
