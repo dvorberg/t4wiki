@@ -73,6 +73,8 @@
     quote(block: true, attribution: attribution)[#text(content)]
 }
 
+#let bq = blockquote
+
 #show quote: it => {
     if target() == "html" and it.block {
         html.elem("figure")[
