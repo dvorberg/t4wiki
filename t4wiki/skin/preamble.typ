@@ -75,6 +75,10 @@
 
 #let bq = blockquote
 
+#let bqa(attribution, content) = context {
+    blockquote(attribution: attribution, content)
+}
+
 #show quote: it => {
     if target() == "html" and it.block {
         html.elem("figure")[
