@@ -22,11 +22,16 @@ def body_contents(dom_tree) -> xsc.Frag:
     result = dom_tree.walknodes(html.body)
     body = next(result)
 
-    ret = xsc.Frag()
-    for child in body:
-        ret.append(child)
-    return ret
-
+    # This is a BS solution to a BS problem.
+    # Where does this even come from?
+    orig = body.content.string
+    def fix_xist_body():
+        print("HELLO")
+        ret = orig()
+        return ret.replace('href="STRING#', 'href="#')
+    body.content.string = fix_xist_body
+    
+    return body.content
 
 weights = {}
 for weight, clss in ( ("B", ( html.h1, html.h2, )),
@@ -92,22 +97,21 @@ absolute_link_re = re.compile(r"^([a-zA-Z0-9]+:|/)", re.IGNORECASE)
 def wiki_links(dom_tree:xsc.Frag) -> Set[str]:
     ret = set()
     for a in dom_tree.walknodes(html.a):
-        if cls != "cite":
+        cls = str(a["class"])
+        if cls == "t4wiki-link":
             href = str(a.attrs.href)
             href = urllib.parse.unquote(href)
             if href and not absolute_link_re.match(href):
                 ret.add(href)
-
+                
     return ret
 
 def citekeys(dom_tree:xsc.Frag) -> Set[str]:
     ret = set()
     for a in dom_tree.walknodes(html.a):
         cls = str(a.attrs.class_)
-        ic(cls)
         if cls == "cite":
             key = str(a.attrs["data-citekey"])
-            ic(key)
             ret.add(key)
 
     return ret

@@ -254,6 +254,9 @@ def article_view(article_title=None):
             "  FROM article_link_resolved "
             " WHERE source_article_id IN (%s)" % article_ids_s)
 
+        if not link_info:            
+            link_info = "{}"
+
         linking_here = list(model.ResolvedArticleTeaser.select(
             sql.where("resolved_full_title =",
                       sql.string_literal(main_article.full_title)),

@@ -148,14 +148,14 @@ body
         }
     }
 
-    .t4wiki-toc
+    .t4wiki-toc, nav[role=doc-toc] /* for typst's #outline function */
     {
-        ul, li
+        ol, ul, li
         {
             list-style: none;
         }
 
-        > ul
+        > ul, > ol
         {
             margin-left: 0;
             padding-left: 0;
