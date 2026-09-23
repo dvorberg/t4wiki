@@ -120,12 +120,30 @@
     }
 }
 
+// https://github.com/typst/typst/issues/2196
+// Cool!
+#let to-string(it) = {
+  if type(it) == str {
+    it
+  } else if type(it) != content {
+    str(it)
+  } else if it.has("text") {
+    it.text
+  } else if it.has("children") {
+    it.children.map(to-string).join()
+  } else if it.has("body") {
+    to-string(it.body)
+  } else if it == [ ] {
+    " "
+  }
+}
+
 // This is that the [[body]] or [[body|target]] syntax is turned into.
 // This definition exists in case I want to or have to separate #link and
 // #wikilink in the future. 
 #let wikilink(body, target:none) = {
-    if (target == none) {
-        link(body)
+    if (target == none) {        
+        link(to-string(body))
     } else {
         link(target, body)
     }
