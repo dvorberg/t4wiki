@@ -189,12 +189,21 @@ class BibEntry(dbobject, has_title_and_namespace):
 
     @property
     def attribution_html(self) -> str:
-        if self.firstname:
-            letter = self.firstname[0] + ". "
-        else:
-            letter = ""
+        firstname = self.firstname or ""
+        lastname = self.lastname or ""
+        shorttitle = self.shorttitle or ""
 
-        return letter + self.lastname + ", <i>" + self.shorttitle + "</i>"
+        if not lastname:
+            author = firstname
+        else:
+            if firstname:
+                letter = self.firstname[0] + ". "
+            else:
+                letter = ""
+
+            author = letter + lastname + ", "
+
+        return author + "<i>" + shorttitle + "</i>"
     
 class FulltextEntry(dbobject, has_title_and_namespace):
     pass
