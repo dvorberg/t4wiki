@@ -1,3 +1,36 @@
+// -*- typst-script: t -*-
+
+#let contains-block(it) = {
+    if it.has("children") {
+        it.children.map(contains-block).contains(true)
+    } else if it.has("text") {
+        false
+    } else {
+        // This is bad programming, because it relies on repr()ʼs user 
+        // representation to make a decision.
+        // 
+        // I assume typst's HTML output will improve and put lang=
+        // attributes into the HTML where appropriate. At this time
+        // lang= is only used at document level.
+        
+        let r = repr(it)                
+        let match = r.match(regex("\[?([a-z]+)\("))
+        let t = none
+        if (match != none) {
+            t = match.captures.at(0)
+        }
+        let spans = ("emph", "strong", "cite", "link", "ref")
+        if (spans.contains(t)) {
+            false
+        } else if (t == "quote") {
+            it.block
+        } else {
+            true
+        }
+    } 
+}
+
+
 #let wikilang(lang, body) = context {
     let style = "normal"
     if (context text.lang) != lang {
@@ -5,28 +38,10 @@
     } 
     
     if target() == "html" {
-        // This is bad programming, because it relies on repr()ʼs user 
-        // representation to make a decision. Unfortunately I wasnʼt able
-        // to figure out a better way to tell if my function is called
-        // within a block or if it is containing blocks.
-        //
-        // I canʼt just use <span> all of the time, because that will
-        // put <p>s or even <figure>s into <span> where they don't belong.
-
-        // Use the language functions as the innermost function
-        // you call. This will avoid trouble in HTML output.
-
-        // I assume typst's HTML output will improve and put lang=
-        // attributes into the HTML where appropriate. At this time
-        // lang= is only used at document level.
-        
-        // html.elem("pre", repr(body))
-        
-        let r = repr(body)
-        if (r.starts-with("[")) {
-            html.elem("span", attrs: (lang: lang), body)
-        } else {
+        if (contains-block(body)) {
             html.elem("div", attrs: (lang: lang), text(body))
+        } else {
+            html.elem("span", attrs: (lang: lang), body)
         }        
     } else {
         text(lang: lang, style: style, body)
@@ -192,4 +207,13 @@
 
 #set outline(title:none)
 
+//////////////////////////////////////////////////////////////////////
 
+#let de(body) = wikilang("de", body)
+#let en(body) = wikilang("en", body)
+
+Germans say #de[Hallo] sometimes.
+
+#en[This becomes hard
+
+    with multiple paragraphs.]
