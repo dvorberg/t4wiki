@@ -23,7 +23,7 @@
         if (spans.contains(t)) {
             false
         } else if (t == "quote") {
-            it.block
+            it.fields().at("block", default:false)
         } else {
             true
         }
