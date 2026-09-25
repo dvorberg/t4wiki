@@ -50,8 +50,8 @@ class Article(dbobject, has_title_and_namespace):
 
     @staticmethod
     def id_by_bibtex_key(key):
-        return query_one(sql.select( ("id",),
-                                     ("wiki.article",),
+        return query_one(sql.select( ("article_id",),
+                                     ("wiki.article_bibtex_info",),
                                      sql.where("bibtex_key = ",
                                                sql.string_literal(key)) ))
 
@@ -156,8 +156,8 @@ class ArticleTitle(dbobject, has_title_and_namespace):
 
 html_p_contents = re.compile("<p>(.*?)</p>", re.DOTALL)    
 class BibEntry(dbobject, has_title_and_namespace):
+    __schema__ = "wiki"
     __relation__ = "article_bibtex_info"
-    __namespace__ = "wiki"
 
     @property
     def shorttitle(self) -> str:

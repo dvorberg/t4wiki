@@ -12,6 +12,7 @@ from ll.xist.ns import html
 
 from citeproc.source.bibtex import BibTeX as BibTeXLibrary
 BibTeXLibrary.fields["shorttitle"] = "shorttitle"
+BibTeXLibrary.fields["aliases"] = "aliases"
 
 from citeproc import CitationStylesStyle, CitationStylesBibliography
 from citeproc import formatter as citeproc_formatter
@@ -363,6 +364,7 @@ def bibtex_form(id:int, bibtex_source=None, followup="view"):
 
             aliases = entry.get("aliases", "").split(",")
             aliases = [ s.strip() for s in aliases ]
+            aliases = [ s for s in aliases if s]
                 
             # Verify key uniqueness.
             keys = aliases + [key,]
@@ -377,9 +379,10 @@ def bibtex_form(id:int, bibtex_source=None, followup="view"):
             if result is not None:
                 feedback.give(
                     "bibtex_source",
-                    xsc.Frag( f'A BibTeX entry for “{key}” already exists '
+                    xsc.Frag( f'A BibTeX entry for “{result.bibtex_key}” '
+                              f'already exists '
                               f'in article “',
-                              html.a(full_title, href=result.href,
+                              html.a(result.full_title, href=result.href,
                                      target="_new"), "”."))            
 
             try:
@@ -402,12 +405,13 @@ def bibtex_form(id:int, bibtex_source=None, followup="view"):
                                bibjson=sql.jsonb_literal(entry) )
 
             execute(sql.delete("wiki.bibtex_alias",
-                               sql.where("citekey IN (",  keys, ")")))
-            execute(sql.insert( ("citekey", "alias",),
-                                "wiki.bibtex_alias",
-                                [ (sql.string_literal(key),
-                                   sql.string_literal(alias))
-                                  for alias in aliases ] )
+                               sql.where("article_id = %i" % id)))
+            if aliases:
+                execute(sql.insert( "wiki.bibtex_alias",
+                                    ("article_id", "alias",),
+                                    [ (sql.integer_literal(id),
+                                       sql.string_literal(alias))
+                                      for alias in aliases ] ))
             
             commit()
             

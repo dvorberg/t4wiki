@@ -273,7 +273,7 @@ def article_view(article_title=None):
         bibliography = model.BibEntry.select(
             sql.left_join( "article_citation",
                            "citekey = bibtex_key"),
-            sql.where("article_id = %i" % article_id),
+            sql.where("article_citation.article_id = %i" % article_id),
             sql.orderby("lastname, firstname, shorttitle"))
             
         return template(article=main_article,
