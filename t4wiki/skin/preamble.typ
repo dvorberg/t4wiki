@@ -206,14 +206,3 @@
 }
 
 #set outline(title:none)
-
-//////////////////////////////////////////////////////////////////////
-
-#let de(body) = wikilang("de", body)
-#let en(body) = wikilang("en", body)
-
-Germans say #de[Hallo] sometimes.
-
-#en[This becomes hard
-
-    with multiple paragraphs.]
