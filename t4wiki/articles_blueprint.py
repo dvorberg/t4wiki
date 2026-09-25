@@ -361,25 +361,26 @@ def bibtex_form(id:int, bibtex_source=None, followup="view"):
                 feedback.give("bibtex_source",
                               "Not a valid citekey: “citekey”.")
 
+            aliases = entry.get("aliases", "").split(",")
+            aliases = [ s.strip() for s in aliases ]
+                
             # Verify key uniqueness.
-            result = query_one("SELECT full_title "
-                               "  FROM wiki.article "
-                               "  LEFT JOIN wiki.article_title "
-                               "    ON article_id = id "
-                               " WHERE id <> %s "
-                               "   AND bibtex_key = %s"
-                               " LIMIT 1",
-                               ( id, key, ))
+            keys = aliases + [key,]
+            keys = [sql.string_literal(key) for key in keys]
+            keys = sql.comma_separated(keys)
+            
+            result = model.BibEntry.select_one(
+                sql.where("bibtex_key IN (",  keys, ")"
+                          " AND ",
+                          "article_id <> %i" % id))
 
             if result is not None:
-                full_title, = result
-                href = f"{get_site_url()}/{full_title}"
                 feedback.give(
                     "bibtex_source",
                     xsc.Frag( f'A BibTeX entry for “{key}” already exists '
                               f'in article “',
-                              html.a(full_title, href=href, target="_new"),
-                              "”."))
+                              html.a(full_title, href=result.href,
+                                     target="_new"), "”."))            
 
             try:
                 bibtex_html = render_bibtex_html(library, article.root_language)
@@ -399,6 +400,15 @@ def bibtex_form(id:int, bibtex_source=None, followup="view"):
                                bibtex_html=bibtex_html,
                                bibtex_tsvector=sql.expression(tsvector),
                                bibjson=sql.jsonb_literal(entry) )
+
+            execute(sql.delete("wiki.bibtex_alias",
+                               sql.where("citekey IN (",  keys, ")")))
+            execute(sql.insert( ("citekey", "alias",),
+                                "wiki.bibtex_alias",
+                                [ (sql.string_literal(key),
+                                   sql.string_literal(alias))
+                                  for alias in aliases ] )
+            
             commit()
             
             return followup_response(followup, id, article.href)
@@ -406,11 +416,6 @@ def bibtex_form(id:int, bibtex_source=None, followup="view"):
         feedback = NullFeedback()
 
     return template(linkman=LinkMan('bibtex', article), feedback=feedback,
-
-
-
-
-
                     templates=read_bibtex_templates())
 
 @bp.route("/user_info_form.cgi", methods=("GET", "POST"))
