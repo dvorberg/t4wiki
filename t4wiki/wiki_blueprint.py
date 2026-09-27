@@ -271,8 +271,7 @@ def article_view(article_title=None):
                 "search_result.article_id NOT IN (%s)" % ",".join(ids))
 
         bibliography = model.BibEntry.select(
-            sql.left_join( "article_citation",
-                           "citekey = bibtex_key"),
+            sql.left_join( "article_citation", "citekey = bibtex_key"),
             sql.where("article_id = %i" % article_id),
             sql.orderby("lastname, firstname, shorttitle"))
             
