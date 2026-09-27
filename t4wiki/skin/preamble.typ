@@ -1,5 +1,24 @@
 // -*- typst-script: t -*-
 
+// https://github.com/typst/typst/issues/2196
+// Cool!
+#let to-string(it) = {
+  if type(it) == str {
+    it
+  } else if type(it) != content {
+    str(it)
+  } else if it.has("text") {
+    it.text
+  } else if it.has("children") {
+    it.children.map(to-string).join()
+  } else if it.has("body") {
+    to-string(it.body)
+  } else if it == [ ] {
+    " "
+  }
+}
+
+
 #let contains-block(it) = {
     if it.has("children") {
         it.children.map(contains-block).contains(true)
@@ -12,22 +31,17 @@
         // I assume typst's HTML output will improve and put lang=
         // attributes into the HTML where appropriate. At this time
         // lang= is only used at document level.
-        
-        let r = repr(it)                
-        let match = r.match(regex("\[?([a-z]+)\("))
-        let t = none
-        if (match != none) {
-            t = match.captures.at(0)
-        }
-        let spans = ("emph", "strong", "cite", "link", "ref")
+
+        let t = repr(it.func())        
+        let spans = ("emph", "strong", "cite", "link", "ref", "space")
         if (spans.contains(t)) {
             false
         } else if (t == "quote") {
-            it.block
+            it.has("block") and it.block
         } else {
             true
         }
-    } 
+    }
 }
 
 
@@ -42,7 +56,7 @@
             html.elem("div", attrs: (lang: lang), text(body))
         } else {
             html.elem("span", attrs: (lang: lang), body)
-        }        
+        }
     } else {
         text(lang: lang, style: style, body)
     }
@@ -128,29 +142,11 @@
         }
         else {
             html.elem("a", attrs: (class: "t4wiki-link",
-                href: repr(it.dest).slice(1, -1)))[#text(it.body)]
+                href: to-string(it.dest)))[#text(it.body)]
         }
     } else {
         text(it)
     }
-}
-
-// https://github.com/typst/typst/issues/2196
-// Cool!
-#let to-string(it) = {
-  if type(it) == str {
-    it
-  } else if type(it) != content {
-    str(it)
-  } else if it.has("text") {
-    it.text
-  } else if it.has("children") {
-    it.children.map(to-string).join()
-  } else if it.has("body") {
-    to-string(it.body)
-  } else if it == [ ] {
-    " "
-  }
 }
 
 // This is that the [[body]] or [[body|target]] syntax is turned into.
