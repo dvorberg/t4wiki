@@ -123,21 +123,35 @@ DROP VIEW IF EXISTS article_bibtex_info CASCADE;
 CREATE VIEW article_bibtex_info AS
 WITH
 articles AS (
-    SELECT title, namespace, bibtex_key, bibtex_html,
+    SELECT article.id AS article_id,
+           title, namespace, bibtex_key, bibtex_html,
            bibjson -> 'author' -> 0 as author,
            bibjson -> 'shorttitle' ->> 0 as shorttitle,
            bibjson -> 'title' ->> 0 as bibtitle
       FROM article
  LEFT JOIN article_title ON article_id = article.id
        AND article_title.is_main_title
+), info AS (       
+    SELECT article_id, title, namespace, bibtex_key, bibtex_html,
+           author ->> 'given' AS firstname,
+           author ->> 'family' AS lastname,
+           CASE WHEN shorttitle IS NULL THEN bibtitle
+                                        ELSE shorttitle
+           END AS shorttitle
+      FROM articles
 )
-SELECT title, namespace, bibtex_key, bibtex_html,
-       author ->> 'given' AS firstname,
-       author ->> 'family' AS lastname,
-       CASE WHEN shorttitle IS NULL THEN bibtitle
-                                    ELSE shorttitle
-       END AS shorttitle
-  FROM articles;
+SELECT article_id, title, namespace,
+       bibtex_key, bibtex_html,
+       firstname, lastname, shorttitle
+  FROM info
+
+UNION
+
+SELECT info.article_id, title, namespace,
+       alias AS bibtex_key, bibtex_html,
+       firstname, lastname, shorttitle
+  FROM info
+  LEFT JOIN bibtex_alias ON bibtex_alias.article_id = info.article_id;
 
 
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
